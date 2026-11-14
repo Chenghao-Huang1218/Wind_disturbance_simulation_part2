@@ -1,6 +1,6 @@
-# Dual UAV Interaction
+# MultiUAV-windInteraction-simulation
 
-**双无人机气动互扰示意与协同吊运仿真平台 · MuJoCo + 双 PX4 SITL**
+**多无人机风场互扰与协同吊运仿真平台 · MuJoCo + 双 PX4 SITL**
 
 在同一个 MuJoCo 世界中运行两架搭载 **Airbot Play 机械臂的 X4-950 四旋翼**，
 每架由独立 PX4 SITL 进程闭环控制。两架无人机可分别执行 XYZ 平移，
@@ -56,8 +56,8 @@
 以下命令从仓库根目录运行，不依赖开发者电脑上的其它项目目录。
 
 ```bash
-git clone https://github.com/Chenghao-Huang1218/Dual_UAV_Interaction.git
-cd Dual_UAV_Interaction
+git clone https://github.com/Chenghao-Huang1218/MultiUAV-windInteraction-simulation.git
+cd MultiUAV-windInteraction-simulation
 
 conda create -n env_uav python=3.12 -y
 conda activate env_uav
@@ -80,7 +80,7 @@ CLI 默认互扰模式是 `off`，上面的命令显式开启 `both`。
 
 ```bash
 conda activate env_uav
-cd Dual_UAV_Interaction  # 替换为你的实际项目路径
+cd MultiUAV-windInteraction-simulation  # 替换为你的实际项目路径
 python scripts/run_simulation.py --mode both --instance-base 4
 ```
 

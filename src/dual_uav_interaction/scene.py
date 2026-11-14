@@ -1,4 +1,4 @@
-"""Build and bind two complete aircraft in one independent MuJoCo world."""
+"""Build and bind a fleet of complete aircraft in one independent MuJoCo world."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ import mujoco
 import numpy as np
 import numpy.typing as npt
 
+from .fleet import (AIRCRAFT_COLORS, AIRCRAFT_LABELS, box_attachment_offsets,
+                    initial_offsets, validate_fleet)
 from .payload import PayloadConfig
 
 ASSETS = Path(__file__).resolve().parent / "assets"
@@ -39,7 +41,7 @@ class AircraftBindings:
 
         Args:
             model: Compiled shared-world model.
-            prefix: a/ or b/ namespace.
+            prefix: Per-aircraft a/, b/, c/ or d/ namespace.
 
         Returns:
             Independent bindings for exactly one aircraft assembly.
@@ -86,36 +88,35 @@ class AircraftBindings:
 def load_scene(
     separation_m: float = 2.0,
     payload_config: PayloadConfig | None = None,
+    aircraft_count: int = 2,
 ) -> tuple[
-    mujoco.MjModel, mujoco.MjData, tuple[AircraftBindings, AircraftBindings]
+    mujoco.MjModel, mujoco.MjData, tuple[AircraftBindings, ...]
 ]:
-    """Attach two fully prefixed copies of the packaged X4 + Airbot scene.
+    """Attach fully prefixed copies of the packaged X4 + Airbot scene.
 
     Args:
-        separation_m: Initial horizontal center separation, at least 1.5 m.
+        separation_m: Pair separation or square side length, at least 1.5 m.
         payload_config: Optional shared box and elastic-rope configuration.
+        aircraft_count: Two or four same-heading aircraft.
 
     Returns:
-        Shared model, state, and isolated bindings for A and B.
+        Shared model, state, and isolated bindings for all aircraft.
     """
-    if not np.isfinite(separation_m) or separation_m < 1.5:
-        raise ValueError(
-            "initial separation must be finite and >=1.5 m (scene clearance setting)"
-        )
-    if payload_config is not None and separation_m > 2.25:
+    validate_fleet(aircraft_count)
+    labels = AIRCRAFT_LABELS[:aircraft_count]
+    offsets = initial_offsets(separation_m, aircraft_count)
+    if payload_config is not None and aircraft_count == 2 and separation_m > 2.25:
         raise ValueError("loaded separation must be in 1.5..2.25 m")
     ground_scene = ASSETS / "robot_models/scenes/ground.xml"
     world = mujoco.MjSpec.from_string(
-        f"""<mujoco model="dual_x4">
+        f"""<mujoco model="multi_x4">
       <option timestep="0.005" gravity="0 0 -9.80665" density="0" viscosity="0"/>
       <include file="{ground_scene}"/>
     </mujoco>"""
     )
     scene = ASSETS / "scenes/default/robot_quadrotor_950_with_arm.xml"
-    for prefix, horizontal, color in (
-        ("a/", -separation_m / 2, [0.1, 0.5, 1, 1]),
-        ("b/", separation_m / 2, [1, 0.45, 0.1, 1]),
-    ):
+    for label, offset, color in zip(labels, offsets, AIRCRAFT_COLORS):
+        prefix = label + "/"
         child = mujoco.MjSpec.from_file(str(scene))
         child.delete(child.geom("floor"))
         child.body("quadrotor_950_pos").add_geom(
@@ -133,13 +134,14 @@ def load_scene(
             fromto=[.20, 0, .12, .43, 0, .12], size=[.025, 0, 0],
             rgba=[1, .85, .15, 1], contype=0, conaffinity=0, mass=0,
         )
-        frame = world.worldbody.add_frame(pos=[0, horizontal, 0])
+        frame = world.worldbody.add_frame(pos=[*offset, 0])
         world.attach(child, prefix=prefix, frame=frame)
     model = world.compile()
     data = mujoco.MjData(model)
     mujoco.mj_forward(model, data)
     if payload_config is not None:
-        grippers = np.array([data.site(p + "endpoint").xpos for p in ("a/", "b/")])
+        grippers = np.array([data.site(label + "/endpoint").xpos
+                             for label in labels])
         center = grippers.mean(axis=0)
         center[2] = payload_config.size_m[2] / 2
         body = world.worldbody.add_body(name="payload", pos=center)
@@ -148,8 +150,8 @@ def load_scene(
                       size=np.array(payload_config.size_m) / 2,
                       mass=payload_config.mass_kg, rgba=[.9, .65, .15, 1],
                       friction=[.8, .01, .001])
-        for index, (label, side) in enumerate((("a", -1), ("b", 1))):
-            local = np.array([0., side * .12, .075])
+        attachments = box_attachment_offsets(aircraft_count)
+        for index, (label, local) in enumerate(zip(labels, attachments)):
             initial_length = np.linalg.norm(center + local - grippers[index])
             if initial_length > payload_config.rope.rest_length_m:
                 raise ValueError(
@@ -165,7 +167,7 @@ def load_scene(
         data = mujoco.MjData(model)
         mujoco.mj_forward(model, data)
     bindings = tuple(
-        AircraftBindings.resolve(model, prefix) for prefix in ("a/", "b/")
+        AircraftBindings.resolve(model, label + "/") for label in labels
     )
     return model, data, bindings
 
@@ -182,7 +184,7 @@ def apply_accelerations(
         model: Shared physics model.
         data: Current synchronized state; writes external loads only.
         bindings: Aircraft subtree definitions.
-        accelerations: World acceleration per aircraft, shape (2, 3).
+        accelerations: World acceleration per aircraft, shape (N, 3).
     """
     values = np.asarray(accelerations, dtype=np.float64)
     if values.shape != (len(bindings), 3) or not np.isfinite(values).all():

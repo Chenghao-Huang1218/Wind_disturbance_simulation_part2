@@ -25,3 +25,17 @@ def test_invalid_clock_is_rejected_and_clock_reset_recovers() -> None:
     for invalid in (float('nan'), float('inf')):
         with pytest.raises(ValueError):
             schedule.poll(invalid)
+
+
+def test_lower_panel_rate_preserves_event_viewer_and_field_rates() -> None:
+    """Reducing numeric refresh must not throttle controls or scene updates."""
+    schedule = DisplaySchedule(panel_hz=1.)
+    counts = dict(panel=0, events=0, viewer=0, field=0)
+    for tick in range(200):
+        due = schedule.poll(tick * .005)
+        for key in counts:
+            counts[key] += getattr(due, key)
+    assert counts == dict(panel=1, events=30, viewer=20, field=10)
+    for invalid in (0., -1., float('nan'), float('inf')):
+        with pytest.raises(ValueError):
+            DisplaySchedule(panel_hz=invalid)

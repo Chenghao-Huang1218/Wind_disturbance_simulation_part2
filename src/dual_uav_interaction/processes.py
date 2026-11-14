@@ -1,4 +1,4 @@
-"""Own exactly two PX4 child processes, with independent state and logs."""
+"""Own two or four PX4 child processes with independent state and logs."""
 
 from __future__ import annotations
 
@@ -10,14 +10,18 @@ import socket
 import subprocess
 from typing import Any, Callable, Self
 
+from .fleet import AIRCRAFT_LABELS, validate_fleet
 
-def check_ports(instance_base: int) -> None:
+
+def check_ports(instance_base: int, aircraft_count: int = 2) -> None:
     """Fail on occupied required localhost endpoints without stopping their owner.
 
     Args:
-        instance_base: First of two consecutive PX4 instance indices.
+        instance_base: First consecutive PX4 instance index.
+        aircraft_count: Number of owned aircraft, two or four.
     """
-    for instance in (instance_base, instance_base + 1):
+    validate_fleet(aircraft_count, instance_base)
+    for instance in range(instance_base, instance_base + aircraft_count):
         for kind, port in (
             (socket.SOCK_STREAM, 4560 + instance),
             (socket.SOCK_DGRAM, 14580 + instance),
@@ -57,13 +61,14 @@ def stop_owned_child(child: subprocess.Popen[Any]) -> None:
 
 
 class SitlPair:
-    """Context manager for an isolated pair of locally owned PX4 instances.
+    """Context manager for an isolated fleet of locally owned PX4 instances.
 
     Args:
         runtime: Copied PX4 bin/etc directory.
         state: Fresh run-specific writable directory.
-        instance_base: First of two consecutive instance indices, 0..8.
+        instance_base: First instance, constrained so all indices are in 0..9.
         process_factory: Injectable subprocess constructor for lifecycle tests.
+        aircraft_count: Number of owned children, two or four.
     """
 
     def __init__(
@@ -72,9 +77,10 @@ class SitlPair:
         state: Path,
         instance_base: int = 0,
         process_factory: Callable[..., Any] = subprocess.Popen,
+        aircraft_count: int = 2,
     ) -> None:
-        if not 0 <= instance_base <= 8:
-            raise ValueError("instance_base must be in 0..8")
+        validate_fleet(aircraft_count, instance_base)
+        self.aircraft_count = aircraft_count
         self.runtime = runtime.resolve()
         self.state = state.resolve()
         self.instance_base = instance_base
@@ -83,18 +89,22 @@ class SitlPair:
         self.logs: list[Any] = []
 
     def __enter__(self) -> Self:
-        """Preflight all endpoints and start both children, cleaning partial failure."""
+        """Preflight all endpoints and start all children, cleaning partial failure."""
         binary = self.runtime / "bin/px4"
         if (
             not binary.is_file()
             or not (self.runtime / "etc/init.d-posix/rcS").is_file()
         ):
             raise FileNotFoundError(f"incomplete PX4 runtime: {self.runtime}")
-        check_ports(self.instance_base)
+        if self.aircraft_count == 2:
+            check_ports(self.instance_base)
+        else:
+            check_ports(self.instance_base, self.aircraft_count)
         self.state.mkdir(parents=True, exist_ok=False)
         try:
             for label, instance in zip(
-                ("a", "b"), (self.instance_base, self.instance_base + 1)
+                AIRCRAFT_LABELS[:self.aircraft_count],
+                range(self.instance_base, self.instance_base + self.aircraft_count)
             ):
                 directory = self.state / label
                 directory.mkdir()
@@ -142,6 +152,7 @@ class SitlPair:
                     {
                         "pids": [child.pid for child in self.children],
                         "instance_base": self.instance_base,
+                        "aircraft_count": self.aircraft_count,
                         "ownership": "informational PIDs only; shutdown uses owned Popen objects",
                     },
                     indent=2,
@@ -153,7 +164,7 @@ class SitlPair:
         return self
 
     def stop(self) -> None:
-        """Reap both owned children and close their log streams."""
+        """Reap all owned children and close their log streams."""
         for child in reversed(self.children):
             stop_owned_child(child)
         for stream in self.logs:
@@ -162,4 +173,4 @@ class SitlPair:
     def __exit__(self, *exception: Any) -> None:
         """Always stop owned children, including after application failure."""
         self.stop()
-        print("Both owned PX4 instances stopped.", flush=True)
+        print(f"All {self.aircraft_count} owned PX4 instances stopped.", flush=True)

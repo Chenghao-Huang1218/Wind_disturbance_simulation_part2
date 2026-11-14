@@ -9,6 +9,8 @@ from typing import Sequence
 import numpy as np
 import numpy.typing as npt
 
+from .fleet import horizontal_distances
+
 FloatArray = npt.NDArray[np.float64]
 MODES = ("off", "horizontal", "vertical", "both")
 
@@ -49,50 +51,52 @@ class InteractionConfig:
 def compute_pair_accelerations(
     positions: Sequence[Sequence[float]],
     config: InteractionConfig,
-    source_active: Sequence[bool] = (True, True),
+    source_active: Sequence[bool] | None = None,
 ) -> FloatArray:
-    """Evaluate both directions from a single world-frame state snapshot.
+    """Sum the approved artificial law from every other active aircraft.
 
-    The user-selected phenomenological law is g=1/(1+(d/L)^2).
-    Horizontal components push the aircraft apart; both vertical components
-    point down. This formula is a simulation assumption, not a literature fit.
+    The phenomenological g=1/(1+(d/L)^2) law is a simulation assumption,
+    not a literature fit. Contributions add without averaging or saturation.
 
     Args:
-        positions: Two finite world positions, shape (2, 3), z upwards.
+        positions: Finite world positions, shape (N, 3), z upwards, N >= 2.
         config: Validated artificial-interaction settings.
-        source_active: Whether each aircraft currently generates disturbance.
+        source_active: N source gates, or None to enable every source.
 
     Returns:
-        World-frame acceleration on A and B in m/s², shape (2, 3).
+        World acceleration per receiver in m/s², shape (N, 3).
 
     Raises:
-        ValueError: For invalid states or an undefined horizontal direction.
+        ValueError: Invalid dimensions or undefined horizontal direction.
     """
     points = np.asarray(positions, dtype=np.float64)
-    if points.shape != (2, 3) or not np.isfinite(points).all():
-        raise ValueError("positions must be finite with shape (2, 3)")
-    active = np.asarray(source_active, dtype=bool)
-    if active.shape != (2,):
-        raise ValueError("source_active must have shape (2,)")
-    result = np.zeros((2, 3), dtype=np.float64)
+    if (points.ndim != 2 or points.shape[1] != 3 or len(points) < 2
+            or not np.isfinite(points).all()):
+        raise ValueError("positions must be finite with shape (N, 3), N >= 2")
+    count = len(points)
+    active = (np.ones(count, dtype=bool) if source_active is None
+              else np.asarray(source_active, dtype=bool))
+    if active.shape != (count,):
+        raise ValueError("source_active must have shape (N,)")
+    result = np.zeros((count, 3), dtype=np.float64)
     if config.mode == "off" or not active.any():
         return result
-    delta = points[1, :2] - points[0, :2]
-    distance = math.hypot(*delta)
-    if not math.isfinite(distance):
-        raise ValueError("horizontal separation must be finite")
-    gain = (config.length_m / math.hypot(distance, config.length_m)) ** 2
+    # Axis 0 is the receiver and axis 1 the source; positive delta repels.
+    distances = horizontal_distances(points)
+    delta = points[:, None, :2] - points[None, :, :2]
+    off_diagonal = ~np.eye(count, dtype=bool)
+    gain = (config.length_m / np.hypot(distances, config.length_m)) ** 2
+    gain *= off_diagonal & active[None, :]
     if config.mode in ("horizontal", "both") and config.horizontal_m_s2 > 0:
-        if distance <= 1e-6:
-            raise ValueError(
-                "horizontal direction undefined at coincident XY positions"
-            )
-        direction = delta / distance
-        result[0, :2] = -config.horizontal_m_s2 * gain * direction
-        result[1, :2] = -result[0, :2]
+        if np.any((distances <= 1e-6) & off_diagonal & active[None, :]):
+            raise ValueError("horizontal direction undefined at coincident XY positions")
+        direction = np.divide(delta, distances[..., None], out=np.zeros_like(delta),
+                              where=distances[..., None] > 1e-6)
+        result[:, :2] = config.horizontal_m_s2 * np.sum(
+            gain[..., None] * direction, axis=1
+        )
     if config.mode in ("vertical", "both"):
-        result[:, 2] = -config.vertical_m_s2 * gain
-    # The source for A is B, and the source for B is A.
-    result[0] *= active[1]
-    result[1] *= active[0]
+        result[:, 2] = -config.vertical_m_s2 * gain.sum(axis=1)
+    if not np.isfinite(result).all():
+        raise FloatingPointError("non-finite accumulated interaction acceleration")
     return result

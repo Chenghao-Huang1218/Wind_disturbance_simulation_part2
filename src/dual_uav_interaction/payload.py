@@ -14,6 +14,8 @@ import mujoco
 import numpy as np
 import numpy.typing as npt
 
+from .fleet import AIRCRAFT_LABELS, validate_fleet
+
 FloatArray = npt.NDArray[np.float64]
 
 
@@ -33,7 +35,7 @@ class ElasticRopeConfig:
 
 @dataclass(frozen=True)
 class PayloadConfig:
-    """Shared box geometry and two equal elastic ropes."""
+    """Shared box geometry and equal elastic ropes."""
 
     mass_kg: float = .5
     rope: ElasticRopeConfig = field(default_factory=ElasticRopeConfig)
@@ -99,7 +101,7 @@ class PayloadSystem:
     """Resolve sites and write only the rope-owned generalized-force channel.
 
     Args:
-        model: Compiled shared world with the payload and both gripper sites.
+        model: Compiled shared world with the payload and all gripper sites.
         config: Payload and rope settings used to build that world.
     """
 
@@ -109,9 +111,13 @@ class PayloadSystem:
         self.body_id = model.body("payload").id
         self.geom_id = model.geom("payload_box").id
         self.floor_id = model.geom("floor").id
-        self.anchor_sites = [model.site(p + "endpoint").id for p in ("a/", "b/")]
-        self.payload_sites = [model.site("payload_" + p).id for p in ("a", "b")]
-        self.root_ids = [model.body(p + "quadrotor_950_pos").id for p in ("a/", "b/")]
+        labels = [label for label in AIRCRAFT_LABELS
+                  if mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE,
+                                      label + "/endpoint") >= 0]
+        validate_fleet(len(labels))
+        self.anchor_sites = [model.site(label + "/endpoint").id for label in labels]
+        self.payload_sites = [model.site("payload_" + label).id for label in labels]
+        self.root_ids = [model.body(label + "/quadrotor_950_pos").id for label in labels]
         self.jacobian = np.zeros((3, model.nv))
         self.forces = np.zeros(model.nv)
 
@@ -121,13 +127,13 @@ class PayloadSystem:
         return self.jacobian @ data.qvel
 
     def apply(self, data: mujoco.MjData) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        """Accumulate two equal/opposite point loads and same-time diagnostics.
+        """Accumulate each rope's equal/opposite point loads and same-time diagnostics.
 
         Args:
             data: Forwarded state. Replaces qfrc_applied, the rope-owned channel.
 
         Returns:
-            Box pose/contact/clearance and both ropes' forces and COM moments.
+            Box pose/contact/clearance and all ropes' forces and COM moments.
         """
         self.forces.fill(0)
         ropes = []

@@ -1,4 +1,4 @@
-"""Reference-style directional controls for two independent aircraft targets."""
+"""Reference-style directional controls for independent aircraft targets."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from matplotlib.patches import Polygon, Rectangle
 from matplotlib.widgets import Button, RadioButtons, TextBox
 import numpy as np
 
+from .fleet import AIRCRAFT_COLORS
 from .interaction import MODES
 from .simulation import DualSimulation
 from .panel_rendering import StatusRenderer
@@ -35,7 +36,7 @@ class DirectionControl:
 
 
 class ControlPanel:
-    """Provide per-aircraft XYZ pads and shared flight/display controls.
+    """Provide two or four per-aircraft XYZ pads and shared flight/display controls.
 
     Args:
         app: Existing shared-world simulation, without a separate physics clock.
@@ -51,24 +52,35 @@ class ControlPanel:
         self.set_disturbance_visible = set_disturbance_visible
         self.step_m = STEP_OPTIONS_M["Medium"]
         self.field_visible = False
-        self.figure = plt.figure(figsize=(6, 5.6), facecolor=BACKGROUND)
-        self.figure.canvas.manager.set_window_title("Dual UAV Control Panel")
+        self.aircraft_count = len(app.aircraft)
+        columns = 2 if self.aircraft_count == 4 else 1
+        x_scale = 1. / columns
+        size = (9, 6.4) if columns == 2 else (6, 5.6)
+        self.figure = plt.figure(figsize=size, facecolor=BACKGROUND)
+        self.figure.canvas.manager.set_window_title("Multi-UAV Control Panel")
         self.buttons: list[Button] = []
         self.direction_controls: list[DirectionControl] = []
         self.aircraft_status = []
-        for index, (shift, color) in enumerate(((0., "#2563a6"),
-                                               (-.30, "#c76117"))):
+        status_regions = []
+        for index in range(self.aircraft_count):
+            shift = -.30 * (index // columns)
+            origin = (index % columns) * x_scale
+            color = AIRCRAFT_COLORS[index]
             self.figure.add_artist(Rectangle(
-                (.025, .695 + shift), .95, .285,
+                (origin + .025 * x_scale, .695 + shift), .95 * x_scale, .285,
                 transform=self.figure.transFigure, facecolor="#fafafa",
                 edgecolor="#d1d5db", linewidth=1, zorder=-10,
             ))
-            self.figure.text(.045, .94 + shift, f"UAV {'AB'[index]}",
+            self.figure.text(origin + .045 * x_scale, .94 + shift,
+                             f"UAV {'ABCD'[index]}",
                              fontsize=10, color=color, fontweight="bold")
             self.aircraft_status.append(self.figure.text(
-                .045, .895 + shift, "Waiting for PX4...", va="top",
-                fontsize=8, family="monospace", color="#303030",
+                origin + .045 * x_scale, .895 + shift, "Waiting for PX4...", va="top",
+                fontsize=7.5 if columns == 2 else 8, family="monospace", color="#303030",
             ))
+            status_regions.append(((origin + .035 * x_scale, .80 + shift,
+                                    .39 * x_scale, .108),
+                                   "#fafafa", [self.aircraft_status[-1]]))
             for label, axis, sign, pointer, x, y, base, hover in (
                 ("X+", 0, 1, "up", .43, .845, "#dbeafe", "#bfdbfe"),
                 ("X-", 0, -1, "down", .43, .715, "#dbeafe", "#bfdbfe"),
@@ -78,11 +90,13 @@ class ControlPanel:
                 ("Z-", 2, -1, "down", .79, .715, "#ffedd5", "#fed7aa"),
             ):
                 self._add_direction(index, axis, sign, label, pointer,
-                                    [x, y + shift, .13, .105], base, hover)
+                                    [origin + x * x_scale, y + shift, .13 * x_scale, .105], base, hover)
         self.flight_buttons = {}
+        self._group_word = "all" if self.aircraft_count == 4 else "both"
+        self.takeoff_button_name = "Takeoff " + self._group_word
         for label, action, x, color in (
-            ("Takeoff both", "request_takeoff", .025, "#d7f0dc"),
-            ("Land both", "land", .265, "#dbeafe"),
+            (self.takeoff_button_name, "request_takeoff", .025, "#d7f0dc"),
+            ("Land " + self._group_word, "land", .265, "#dbeafe"),
             ("Emergency", "emergency", .505, "#ffe2cf"),
             ("Exit", "exit", .745, "#dedede"),
         ):
@@ -144,9 +158,7 @@ class ControlPanel:
             self.field_button.label.set_text("Field unavailable")
             self.field_button.color = "#e2e2e2"
             self.field_button.ax.set_facecolor(self.field_button.color)
-        self._status_renderer = StatusRenderer(self.figure, [
-            ((.035, .80, .39, .108), "#fafafa", [self.aircraft_status[0]]),
-            ((.035, .50, .39, .108), "#fafafa", [self.aircraft_status[1]]),
+        self._status_renderer = StatusRenderer(self.figure, status_regions + [
             ((.035, .174, .94, .075), BACKGROUND, [self.status, self.cargo_status]),
             ((.025, .001, .95, .042), BACKGROUND, [self.error]),
             ((.28, .052, .695, .04), BACKGROUND, [self.applied]),
@@ -263,8 +275,8 @@ class ControlPanel:
             self.error.set_text("")
         except (ValueError, RuntimeError) as error:
             self.error.set_text(str(error))
-        self.flight_buttons["Takeoff both"].label.set_text(
-            "Arming both..." if self.app.takeoff_pending else "Takeoff both"
+        self.flight_buttons[self.takeoff_button_name].label.set_text(
+            f"Arming {self._group_word}..." if self.app.takeoff_pending else self.takeoff_button_name
         )
         self.figure.canvas.draw_idle()
 
@@ -272,15 +284,15 @@ class ControlPanel:
         """Refresh actual/target positions and loads from one same-time sample."""
         for index, row in enumerate(sample["aircraft"]):
             connected = self.app.aircraft[index].bridge.heartbeat_is_recent()
-            position = np.array(row["position"])
-            target = np.array(row["target"])
+            position = " ".join(f"{value:5.2f}" for value in row["position"])
+            target = " ".join(f"{value:5.2f}" for value in row["target"])
             self.aircraft_status[index].set_text(
                 f"{'connected' if connected else 'waiting'} | {row['phase']}\n"
-                f"Pos: {np.array2string(position, precision=2, floatmode='fixed')}\n"
-                f"Tgt: {np.array2string(target, precision=2, floatmode='fixed')}"
+                f"Pos: [{position}]\n"
+                f"Tgt: [{target}]"
             )
-        label = "Arming both..." if self.app.takeoff_pending else "Takeoff both"
-        takeoff = self.flight_buttons["Takeoff both"].label
+        label = f"Arming {self._group_word}..." if self.app.takeoff_pending else self.takeoff_button_name
+        takeoff = self.flight_buttons[self.takeoff_button_name].label
         flight_label_changed = takeoff.get_text() != label
         if flight_label_changed:
             takeoff.set_text(label)
@@ -289,7 +301,7 @@ class ControlPanel:
             tension = [round(row["tension_n"], 2) for row in sample["ropes"]]
             self.cargo_status.set_text(
                 f"Cargo: {cargo['position'][2]:.2f} m | "
-                f"Rope A/B: {tension} N"
+                f"Rope {'/'.join('ABCD'[:self.aircraft_count])}: {tension} N"
             )
         config = sample["interaction"]
         self.applied.set_text(
@@ -297,7 +309,7 @@ class ControlPanel:
             f"Az={config['vertical_m_s2']:g} L={config['length_m']:g}"
         )
         self.status.set_text(
-            f"Distance: {sample['separation_m']:.2f} m"
+            f"{'Min distance' if self.aircraft_count == 4 else 'Distance'}: {sample['separation_m']:.2f} m"
         )
         if flight_label_changed:
             self.figure.canvas.draw_idle()

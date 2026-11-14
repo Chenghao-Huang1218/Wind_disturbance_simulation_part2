@@ -1,4 +1,4 @@
-"""Bounded native GUI / actual dual-SITL validation via real canvas clicks.
+"""Bounded native GUI / actual fleet-SITL validation via real canvas clicks.
 
 Example: MPLBACKEND=TkAgg xvfb-run -a python scripts/validate_control_panel.py
 Starts only project-owned PX4 instances; never builds firmware.
@@ -7,6 +7,7 @@ Starts only project-owned PX4 instances; never builds firmware.
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 from datetime import datetime
 import json
 from pathlib import Path
@@ -25,7 +26,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from dual_uav_interaction.disturbance_visualization import DisturbanceVisualization  # noqa: E402
 from dual_uav_interaction.panel import ControlPanel  # noqa: E402
-from dual_uav_interaction.payload import PayloadConfig  # noqa: E402
+from dual_uav_interaction.payload import ElasticRopeConfig, PayloadConfig  # noqa: E402
 from dual_uav_interaction.processes import SitlPair  # noqa: E402
 from dual_uav_interaction.simulation import DualSimulation  # noqa: E402
 from dual_uav_interaction.viewer import ManagedPassiveViewer  # noqa: E402
@@ -40,25 +41,35 @@ def click(figure: Figure, axes: Axes) -> None:
         figure.canvas.callbacks.process(event_name, event)
 
 
-def validate(output: Path, instance_base: int, timeout: float) -> bool:
-    """Run takeoff, field toggle, six isolated moves and grounded landing.
+def validate(output: Path, instance_base: int, timeout: float, aircraft_count: int = 4) -> bool:
+    """Run takeoff, field toggle, isolated XYZ moves and grounded landing.
 
     Args:
         output: Fresh evidence directory, rejected if already present.
-        instance_base: First of two local PX4 instances.
+        instance_base: First local PX4 instance.
+        aircraft_count: Two or four local aircraft.
         timeout: Maximum wall seconds for the complete validation.
 
     Returns:
         True only after all GUI-driven moves and grounded/disarmed landing.
     """
     output.mkdir(parents=True, exist_ok=False)
-    app = DualSimulation(instance_base=instance_base, payload_config=PayloadConfig())
+    app = DualSimulation(instance_base=instance_base, aircraft_count=aircraft_count,
+                         payload_config=PayloadConfig(rope=ElasticRopeConfig(
+                             rest_length_m=1.6 if aircraft_count == 4 else 1.2)))
     app.set_interaction("both", .5, .5, 2.)
+    (output / "metadata.json").write_text(json.dumps({
+        "aircraft_count": aircraft_count, "instance_base": instance_base,
+        "separation_m": 2., "payload": asdict(app.payload_config),
+        "initial_settings": asdict(app.interaction),
+        "validation": "native_canvas_independent_moves",
+    }, indent=2))
     visual = DisturbanceVisualization()
     visual.set_enabled(False)
     viewer = None
     panel = None
-    pair = SitlPair(ROOT / "runtime/px4", output / "px4", instance_base)
+    pair = SitlPair(ROOT / "runtime/px4", output / "px4", instance_base,
+                    aircraft_count=aircraft_count)
     events: list[dict[str, Any]] = []
     success = False
     error = ""
@@ -68,14 +79,15 @@ def validate(output: Path, instance_base: int, timeout: float) -> bool:
     stable_since = None
     move_index = 0
     pending_move = None
-    display_schedule = DisplaySchedule()
+    display_schedule = DisplaySchedule(panel_hz=1. if aircraft_count == 4 else 2.)
     last_sample = None
-    moves = [(index, axis) for index in (0, 1) for axis in (0, 1, 2)]
+    timings: dict[str, list[float]] = {key: [] for key in ("field", "viewer", "panel", "events")}
+    moves = [(index, axis) for index in range(aircraft_count) for axis in (0, 1, 2)]
     try:
         with pair:
             app.connect()
             viewer = ManagedPassiveViewer(app.model, app.data)
-            viewer.cam.distance = 7
+            viewer.cam.distance = 8 if aircraft_count == 4 else 7
             viewer.cam.lookat[:] = [.3, 0, 1.5]
 
             def set_visible(enabled: bool) -> None:
@@ -110,11 +122,11 @@ def validate(output: Path, instance_base: int, timeout: float) -> bool:
                     if phase == "waiting" and all(
                         a.bridge.heartbeat_is_recent() for a in app.aircraft
                     ):
-                        click(panel.figure, panel.flight_buttons["Takeoff both"].ax)
+                        click(panel.figure, panel.flight_buttons[panel.takeoff_button_name].ax)
                         assert app.takeoff_pending and not panel.error.get_text()
-                        events.append({"event": "Takeoff both clicked", "time_s": now})
+                        events.append({"event": f"{panel.takeoff_button_name} clicked", "time_s": now})
                         phase = "lifting"
-                        print("GUI Takeoff both clicked; awaiting actual lift", flush=True)
+                        print(f"GUI {panel.takeoff_button_name} clicked; awaiting actual lift", flush=True)
                     elif phase == "lifting":
                         cargo = sample["payload"]
                         settled = (all(a["phase"] == "hover" for a in sample["aircraft"])
@@ -131,7 +143,7 @@ def validate(output: Path, instance_base: int, timeout: float) -> bool:
                     elif phase == "field" and now - stage_started > .2:
                         with viewer.lock():
                             count = visual.draw(viewer.user_scn)
-                        assert count > 0
+                        assert count == 2544 * aircraft_count
                         click(panel.figure, panel.field_button.ax)
                         assert not panel.field_visible and viewer.user_scn.ngeom == 0
                         events.append({"event": "field start/draw/stop",
@@ -168,13 +180,13 @@ def validate(output: Path, instance_base: int, timeout: float) -> bool:
                                                "measured_axis_displacement_m": float(
                                                    actual[axis] - before[axis]),
                                                "time_s": now})
-                                print(f"GUI UAV {'AB'[index]} {'XYZ'[axis]}+ verified", flush=True)
+                                print(f"GUI UAV {'ABCD'[index]} {'XYZ'[axis]}+ verified", flush=True)
                                 move_index += 1
                                 pending_move = None
                                 if move_index == len(moves):
                                     panel.update(sample)
                                     panel.figure.savefig(output / "native-panel.png", dpi=140)
-                                    click(panel.figure, panel.flight_buttons["Land both"].ax)
+                                    click(panel.figure, panel.flight_buttons["Land " + panel._group_word].ax)
                                     phase = "landing"
                                     stable_since = None
                     elif phase == "landing":
@@ -195,16 +207,24 @@ def validate(output: Path, instance_base: int, timeout: float) -> bool:
                             click(panel.figure, panel.flight_buttons["Exit"].ax)
                     due = display_schedule.poll(time.perf_counter())
                     if due.field:
+                        refresh_start = time.perf_counter()
                         with viewer.lock():
                             visual.draw(viewer.user_scn)
+                        timings["field"].append(time.perf_counter() - refresh_start)
                     if due.viewer:
                         if not viewer.is_running():
                             raise RuntimeError("viewer closed before completion")
+                        refresh_start = time.perf_counter()
                         viewer.sync()
+                        timings["viewer"].append(time.perf_counter() - refresh_start)
                     if due.panel:
+                        refresh_start = time.perf_counter()
                         panel.update(sample)
+                        timings["panel"].append(time.perf_counter() - refresh_start)
                     if due.events:
+                        refresh_start = time.perf_counter()
                         panel.process_events()
+                        timings["events"].append(time.perf_counter() - refresh_start)
                     iteration += 1
                     remaining = app.model.opt.timestep - (time.perf_counter() - tick)
                     if remaining > 0:
@@ -220,7 +240,7 @@ def validate(output: Path, instance_base: int, timeout: float) -> bool:
             viewer.close()
         summary = {"success": success and not error, "error": error,
                    "native_GUI": True, "backend": plt.get_backend(),
-                   "actual_dual_PX4": True, "instance_base": instance_base,
+                   "actual_PX4_count": aircraft_count, "instance_base": instance_base,
                    "events": events, "phase": phase,
                    "elapsed_wall_s": time.perf_counter() - started,
                    "simulated_time_s": last_sample["time_s"] if last_sample else 0.,
@@ -228,7 +248,13 @@ def validate(output: Path, instance_base: int, timeout: float) -> bool:
                        last_sample["time_s"] / max(time.perf_counter() - started, 1e-9)
                        if last_sample else 0.
                    ),
-                   "display_rates_hz": DisplaySchedule.rates_hz,
+                   "display_rates_hz": display_schedule.rates_hz,
+                   "display_timings_ms": {
+                       key: {"median": float(np.median(values) * 1000),
+                             "p95": float(np.percentile(values, 95) * 1000),
+                             "total_wall_s": sum(values)}
+                       for key, values in timings.items() if values
+                   },
                    "owned_px4_stopped": all(p.poll() is not None for p in pair.children),
                    "final_payload": last_sample["payload"] if last_sample else None}
         (output / "summary.json").write_text(json.dumps(summary, indent=2))
@@ -240,8 +266,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/validation" /
                         ("control_panel_" + datetime.now().strftime("%Y%m%d_%H%M%S")))
+    parser.add_argument("--aircraft-count", type=int, choices=(2, 4), default=4)
     parser.add_argument("--instance-base", type=int, default=4)
-    parser.add_argument("--timeout", type=float, default=180.)
+    parser.add_argument("--timeout", type=float, default=360.)
     args = parser.parse_args()
     raise SystemExit(0 if validate(args.output_dir.resolve(), args.instance_base,
-                                  args.timeout) else 1)
+                                  args.timeout, args.aircraft_count) else 1)

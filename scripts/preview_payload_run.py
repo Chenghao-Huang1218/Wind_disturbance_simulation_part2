@@ -32,7 +32,7 @@ def render_run(run_directory: Path, output_directory: Path) -> None:
     metadata = json.loads((run_directory / "metadata.json").read_text())
     settings = metadata["payload"]
     config = PayloadConfig(settings["mass_kg"], ElasticRopeConfig(**settings["rope"]))
-    model, data, bindings = load_scene(metadata["separation_m"], config)
+    model, data, bindings = load_scene(metadata["separation_m"], config, metadata.get("aircraft_count", 2))
     samples = [json.loads(line) for line in (run_directory / "states.jsonl").open()]
     output_directory.mkdir(parents=True, exist_ok=True)
     model.vis.global_.offwidth = 1000
@@ -66,7 +66,7 @@ def render_run(run_directory: Path, output_directory: Path) -> None:
             draw = ImageDraw.Draw(framed)
             tension = [round(r["tension_n"], 2) for r in sample["ropes"]]
             draw.text((12, 7), f"SITL pose replay | t={sample['time_s']:.2f} s | mode={metadata['initial_settings']['mode']}", font=font)
-            draw.text((12, 737), f"Cargo bottom={cargo['bottom_clearance_m']:.2f} m | tension A/B={tension} N | recorded poses, time compressed", font=font)
+            draw.text((12, 737), f"Cargo bottom={cargo['bottom_clearance_m']:.2f} m | tension={tension} N | recorded poses, time compressed", font=font)
             if index == still_index:
                 framed.save(output_directory / "payload-carry-sitl.png")
             if index in selected_indices:

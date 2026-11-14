@@ -1,4 +1,4 @@
-"""Launch the independent pair, graphical panel, or bounded headless checks."""
+"""Launch an independent fleet, graphical panel, or bounded headless checks."""
 
 from __future__ import annotations
 
@@ -29,11 +29,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 def parser() -> argparse.ArgumentParser:
     """Describe runtime settings and the four artificial interaction modes."""
     result = argparse.ArgumentParser(description=__doc__)
+    result.add_argument("--aircraft-count", type=int, choices=(2, 4), default=4,
+                        help="number of aircraft; default four")
+    result.add_argument("--panel-hz", type=float, default=None,
+                        help="numeric readout Hz; defaults 1 for four aircraft, 2 for two")
     result.add_argument("--mode", choices=MODES, default="off")
     result.add_argument("--no-payload", action="store_true", help="run without cargo or ropes")
     result.add_argument("--payload-mass", type=float, default=.5, help="cargo mass (kg)")
-    result.add_argument("--rope-length", type=float, default=1.2,
-                        help="unstretched rope length (m)")
+    result.add_argument("--rope-length", type=float, default=None,
+                        help="unstretched rope length (m); defaults 1.6 for four aircraft, 1.2 for two")
     result.add_argument("--rope-stiffness", type=float, default=100.,
                         help="axial spring stiffness (N/m)")
     result.add_argument("--rope-damping", type=float, default=3., help="axial damping (N s/m)")
@@ -71,7 +75,7 @@ def parser() -> argparse.ArgumentParser:
         "--instance-base",
         type=int,
         default=0,
-        help="two consecutive PX4 instances, 0..8",
+        help="first consecutive PX4 instance; 0..6 for four, 0..8 for two",
     )
     result.add_argument(
         "--headless",
@@ -109,7 +113,7 @@ def parser() -> argparse.ArgumentParser:
 
 
 def run(arguments: argparse.Namespace) -> int:
-    """Execute one owned two-PX4 session and record an honest completion summary.
+    """Execute one owned multi-PX4 session and record an honest completion summary.
 
     Args:
         arguments: Validated CLI namespace.
@@ -132,13 +136,20 @@ def run(arguments: argparse.Namespace) -> int:
         raise ValueError(
             "--headless requires --auto; use --check for an offline load check"
         )
+    rope_length = arguments.rope_length
+    if rope_length is None:
+        rope_length = 1.6 if arguments.aircraft_count == 4 else 1.2
     payload_config = None if arguments.no_payload else PayloadConfig(
         mass_kg=arguments.payload_mass,
-        rope=ElasticRopeConfig(arguments.rope_length, arguments.rope_stiffness,
+        rope=ElasticRopeConfig(rope_length, arguments.rope_stiffness,
                                arguments.rope_damping),
     )
+    panel_hz = arguments.panel_hz
+    if panel_hz is None:
+        panel_hz = 1. if arguments.aircraft_count == 4 else 2.
+    display_schedule = DisplaySchedule(panel_hz=panel_hz)
     app = DualSimulation(arguments.separation, arguments.height, arguments.instance_base,
-                         payload_config=payload_config)
+                         payload_config=payload_config, aircraft_count=arguments.aircraft_count)
     app.interaction = settings
     if arguments.check:
         print(
@@ -176,6 +187,8 @@ def run(arguments: argparse.Namespace) -> int:
         "physical_calibration": False,
         "initial_settings": asdict(settings),
         "instance_base": arguments.instance_base,
+        "aircraft_count": arguments.aircraft_count,
+        "interaction_combination": "sum_of_other_active_sources",
         "separation_m": arguments.separation,
         "takeoff_height_m": arguments.height,
         "mass_kg": [item.bindings.mass_kg for item in app.aircraft],
@@ -189,11 +202,11 @@ def run(arguments: argparse.Namespace) -> int:
             "radius_definition": "horizontal_graph_domain",
             "height_represents": "normalized_artificial_gain_not_potential",
         },
-        "seed": [arguments.instance_base + 1, arguments.instance_base + 2],
+        "seed": list(range(arguments.instance_base + 1, arguments.instance_base + arguments.aircraft_count + 1)),
         "payload": asdict(payload_config) if payload_config else None,
         "rope_force_model": "tension_only_clipped_kelvin_voigt_at_live_sites",
         "rope_spatial_tendons_visual_only": True,
-        "display_rates_hz": DisplaySchedule.rates_hz if not arguments.headless else None,
+        "display_rates_hz": display_schedule.rates_hz if not arguments.headless else None,
         "loaded_position_ramp": {
             "speed_limit_m_s": .25,
             "acceleration_slew_m_s2": .1,
@@ -226,7 +239,6 @@ def run(arguments: argparse.Namespace) -> int:
     start = time.perf_counter()
     phase = "waiting"
     hover_started = 0.0
-    display_schedule = DisplaySchedule()
 
     def request_shutdown(number: int, frame: Any) -> None:
         """Leave the loop safely even when Tk is dispatching a callback."""
@@ -243,6 +255,7 @@ def run(arguments: argparse.Namespace) -> int:
             PROJECT_ROOT / "runtime/px4",
             run_directory / "px4",
             arguments.instance_base,
+            aircraft_count=arguments.aircraft_count,
         ) as pair:
             app.connect()
             if not arguments.headless:
@@ -252,7 +265,7 @@ def run(arguments: argparse.Namespace) -> int:
                 from .disturbance_visualization import DisturbanceVisualization
 
                 viewer = ManagedPassiveViewer(app.model, app.data)
-                viewer.cam.distance = 7
+                viewer.cam.distance = 8 if arguments.aircraft_count == 4 else 7
                 viewer.cam.lookat[:] = [0, 0, 1.7]
                 visualization = DisturbanceVisualization()
                 visualization.set_enabled(False)
@@ -278,7 +291,7 @@ def run(arguments: argparse.Namespace) -> int:
                         child.poll() is not None for child in pair.children
                     ):
                         raise RuntimeError(
-                            "one of the owned PX4 instances exited; inspect px4/a,b/console.log"
+                            "one of the owned PX4 instances exited; inspect per-aircraft px4/*/console.log"
                         )
                     if arguments.auto and elapsed > arguments.timeout:
                         raise RuntimeError(
@@ -313,7 +326,7 @@ def run(arguments: argparse.Namespace) -> int:
                             for item in app.aircraft
                         ):
                             print(
-                                "Both PX4 identities connected; arming.",
+                                "All PX4 identities connected; arming.",
                                 flush=True,
                             )
                             app.command("arm")
@@ -324,14 +337,14 @@ def run(arguments: argparse.Namespace) -> int:
                             completion["armed"] = True
                             app.command("takeoff")
                             phase = "takeoff"
-                            print("Both armed; takeoff.", flush=True)
+                            print("All armed; takeoff.", flush=True)
                         elif phase == "takeoff" and all(
                             item.phase == "hover" for item in app.aircraft
                         ):
                             completion["takeoff"] = True
                             hover_started = time.perf_counter()
                             phase = "lifting" if transport else "hover"
-                            print(f"Both at takeoff height; next phase: {phase}.",
+                            print(f"All at takeoff height; next phase: {phase}.",
                                   flush=True)
                         elif phase in ("lifting", "transferring"):
                             transition = transport.update(sample)
@@ -339,7 +352,7 @@ def run(arguments: argparse.Namespace) -> int:
                             if transition == "move":
                                 app.command("move", transport.offset)
                                 phase = "transferring"
-                                print("Cargo lifted; translating both aircraft "
+                                print("Cargo lifted; translating all aircraft "
                                       "+X 0.5 m.", flush=True)
                             elif transition == "hold":
                                 phase = "hover"
@@ -358,7 +371,7 @@ def run(arguments: argparse.Namespace) -> int:
                                 phase = "landing"
                                 if transport:
                                     transport.phase = "landing"
-                                print("Landing both aircraft.", flush=True)
+                                print("Landing all aircraft.", flush=True)
                         elif phase == "landing" and all(
                             item.phase == "landed" for item in app.aircraft
                         ):
@@ -370,7 +383,7 @@ def run(arguments: argparse.Namespace) -> int:
                                 app.command("exit")
                                 success = True
                                 detail = " and cargo grounded" if transport else ""
-                                print(f"Both landed/disarmed{detail}; exiting.",
+                                print(f"All landed/disarmed{detail}; exiting.",
                                       flush=True)
                     if viewer is not None:
                         due = display_schedule.poll(time.perf_counter())
@@ -405,7 +418,7 @@ def run(arguments: argparse.Namespace) -> int:
         if viewer is not None:
             viewer.close()
         metrics = []
-        for index in range(2):
+        for index in range(arguments.aircraft_count):
             if samples:
                 positions = np.array(
                     [
@@ -434,6 +447,7 @@ def run(arguments: argparse.Namespace) -> int:
                 )
         summary = {
             "success": success,
+            "aircraft_count": arguments.aircraft_count,
             "error": error_text,
             "completion": completion,
             "initial_mode": settings.mode,

@@ -62,7 +62,7 @@ ldd runtime/px4/bin/px4
 # 无 PX4、无窗口、无网络的真实模型加载
 python scripts/run_simulation.py --check --mode both
 
-# 打开 MuJoCo、面板并启动本启动器拥有的两个 PX4
+# 打开 MuJoCo、面板并启动本启动器拥有的四个 PX4
 python scripts/run_simulation.py --mode both --instance-base 4
 ```
 
@@ -77,9 +77,9 @@ python scripts/run_simulation.py --headless --auto --mode both --duration 3 --ti
 
 - **PX4 cannot open shared object**：先 `ldd` 确认缺少的准确 SONAME；补齐匹配的系统包并检查 ROS 环境。
 - **没有 Tk 或图形窗口**：确认在已激活环境中 `import tkinter` 成功，且当前会话具有桌面显示权限；无窗口模式使用 `--headless --auto`。
-- **端口被占用**：退出自己旧的仿真，或换 `--instance-base 0` 等空闲实例组（范围 0–8）。启动器不会终止其它程序。
+- **端口被占用**：退出自己旧的仿真，或换 `--instance-base 0` 等空闲实例组（四机范围 0–6，双机 0–8）。启动器不会终止其它程序。
 - **曲面没有出现**：点击 Start wind field，并等待源机解锁、升空且产生转子推力；地面停转时不会出现。
-- **移动被拒绝**：方向控制仅用于已解锁的起飞/悬停飞机；检查带载目标水平间距 1.50–2.25 m。
+- **移动被拒绝**：方向控制仅用于已解锁的起飞/悬停飞机；检查任意两机目标水平间距至少 1.50 m，以及四机带载的水平绳长可达性；双机带载仍为 1.50–2.25 m。
 - **运动迟缓**：带载指令本身限速 0.25 m/s；另检查 summary 的 realtime_factor。绘图或高负载会使仿真慢于现实时间。
 - **自动流程超时**：timeout 是墙钟秒，可适当增加；不要把超时当作完整流程成功。
 - **输入 Ah/Az/L 后没有变化**：点击 Apply；非法值保留上一组配置。风场图显示归一化强度，因此 Ah/Az 不改变曲面形状。
@@ -93,3 +93,5 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 MPLBACKEND=Agg python -m pytest -q
 
 测试不启动 PX4，不替代实际 SITL。预览脚本还使用 Pillow（Matplotlib 的依赖）。
 显示性能基准的基线和运行方式见 `docs/VALIDATION.md`；基准复用 tests 中的通信替身，不是飞行验收。
+
+当前启动入口默认四机，2×2 方阵与四条 1.6 m 绳。使用 `--aircraft-count 2` 可运行原双机配置，默认绳长 1.2 m。

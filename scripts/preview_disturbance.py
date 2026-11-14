@@ -37,7 +37,7 @@ def caption(image: Image.Image) -> Image.Image:
     draw = ImageDraw.Draw(framed)
     font = ImageFont.truetype("DejaVuSans.ttf", 16)
     draw.text(
-        (16, 9), "Dual UAV | Strength surfaces + contours | 10 m horizontal radius",
+        (16, 9), "Multi UAV | Strength surfaces + contours | 10 m horizontal radius",
         fill="white", font=font,
     )
     draw.text(
@@ -49,14 +49,14 @@ def caption(image: Image.Image) -> Image.Image:
     return framed
 
 
-def render_preview(output_dir: Path) -> None:
+def render_preview(output_dir: Path, aircraft_count: int = 4) -> None:
     """Save surface PNGs and a camera-orbit GIF of the packaged models.
 
     Args:
         output_dir: Directory to create or reuse for the generated previews.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
-    model, data, bindings = load_scene()
+    model, data, bindings = load_scene(aircraft_count=aircraft_count)
     # Poses only: no stepping, simulated flight or live controller.
     for binding in bindings:
         data.qpos[binding.qpos + 2] += 2.0
@@ -71,11 +71,11 @@ def render_preview(output_dir: Path) -> None:
     camera.distance = 9
     visual = DisturbanceVisualization()
     frames: list[Image.Image] = []
-    with mujoco.Renderer(model, height=750, width=1100) as renderer:
+    with mujoco.Renderer(model, height=750, width=1100, max_geom=18000) as renderer:
         for frame_index in range(24):
             time_s = frame_index / 10
             camera.azimuth = 125 + 12 * np.sin(2 * np.pi * frame_index / 24)
-            visual.update(time_s, positions, [True, True])
+            visual.update(time_s, positions, [True] * aircraft_count)
             renderer.update_scene(data, camera=camera)
             visual.draw(renderer.scene, append=True)
             frame = caption(Image.fromarray(renderer.render()))
@@ -101,8 +101,9 @@ def main() -> None:
     parser.add_argument(
         "--output-dir", type=Path, default=PROJECT_ROOT / "docs/media"
     )
+    parser.add_argument("--aircraft-count", type=int, choices=(2, 4), default=4)
     arguments = parser.parse_args()
-    render_preview(arguments.output_dir.resolve())
+    render_preview(arguments.output_dir.resolve(), arguments.aircraft_count)
 
 
 if __name__ == "__main__":

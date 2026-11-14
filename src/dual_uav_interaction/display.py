@@ -21,7 +21,15 @@ class DisplaySchedule:
 
     rates_hz = dict(panel=2., events=30., viewer=20., field=10.)
 
-    def __init__(self) -> None:
+    def __init__(self, panel_hz: float = 2.) -> None:
+        """Set numeric refresh independently from input and rendering.
+
+        Args:
+            panel_hz: Finite positive readout frequency in wall-clock Hz.
+        """
+        if not math.isfinite(panel_hz) or panel_hz <= 0:
+            raise ValueError("panel refresh frequency must be finite and positive")
+        self.rates_hz = {**type(self).rates_hz, "panel": float(panel_hz)}
         self._next: dict[str, float] = {}
         self._last: float | None = None
 

@@ -2,7 +2,7 @@
 
 `bin/` and `etc/` contain the existing Linux x86-64 SITL runtime rebuilt in the
 source project on 2026-11-10. This dual-UAV project copies that runtime without
-recompiling it and launches the same binary twice with isolated instance IDs,
+recompiling it and launches the same binary for each aircraft with isolated instance IDs,
 ports, parameters, and logs. The full PX4 source tree and build cache are not
 included.
 
@@ -13,7 +13,7 @@ python scripts/run_simulation.py --mode both --instance-base 4
 ```
 
 Do not start separate PX4 processes for the same instances. The launcher owns
-and cleans up its two children. Check shared libraries before running:
+and cleans up its four children (or two with `--aircraft-count 2`). Check shared libraries before running:
 
 ```bash
 ldd runtime/px4/bin/px4

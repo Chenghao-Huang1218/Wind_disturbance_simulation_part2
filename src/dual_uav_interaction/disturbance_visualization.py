@@ -19,7 +19,8 @@ SURFACE_DEPTH_M = 1.35
 FADE_OUT_S = 0.6
 RADIAL_INTERVALS = 12
 AZIMUTH_SECTORS = 48
-SOURCE_COLORS = np.array([[0.98, 0.30, 0.12], [1.0, 0.60, 0.16]])
+SOURCE_COLORS = np.array([[0.98, 0.30, 0.12], [1.0, 0.60, 0.16],
+                          [0.88, 0.25, 0.65], [0.95, 0.80, 0.20]])
 
 
 def surface_height(radius_m: FloatArray, length_m: float) -> FloatArray:
@@ -170,7 +171,7 @@ def _make_geometry(length_m: float) -> SurfaceGeometry:
 
 
 class DisturbanceVisualization:
-    """Draw independent strength graphs for two aircraft without touching physics.
+    """Draw independent strength graphs for each aircraft without touching physics.
 
     The display consumes same-time world positions, source gates and applied L.
     It uses no model/data reference, random sampling or physical time stepping.
@@ -219,8 +220,8 @@ class DisturbanceVisualization:
 
         Args:
             time_s: Finite nonnegative simulation time in seconds.
-            positions: Finite world root positions, shape (2, 3), metres.
-            source_active: Two source gates, independent of interaction mode.
+            positions: Finite world root positions, shape (N, 3), metres; N=2 or 4.
+            source_active: N source gates, independent of interaction mode.
             length_m: Applied L controlling the normalized strength graph.
 
         Raises:
@@ -230,12 +231,17 @@ class DisturbanceVisualization:
         active = np.asarray(source_active, dtype=bool)
         if not math.isfinite(time_s) or time_s < 0:
             raise ValueError("visual time must be finite and nonnegative")
-        if points.shape != (2, 3) or not np.isfinite(points).all():
-            raise ValueError("visual positions must be finite with shape (2, 3)")
-        if active.shape != (2,):
-            raise ValueError("visual source gates must have shape (2,)")
+        if (points.ndim != 2 or points.shape[1] != 3
+                or len(points) not in (2, 4) or not np.isfinite(points).all()):
+            raise ValueError("visual positions must be finite with shape (N, 3), N=2 or 4")
+        if active.shape != (len(points),):
+            raise ValueError("visual source gates must have shape (N,)")
         if not math.isfinite(length_m) or length_m <= 0:
             raise ValueError("surface length must be finite and positive")
+        if len(points) != len(self._last_active):
+            self._clear()
+            self._last_active = np.full(len(points), -np.inf)
+            self._opacity = np.zeros(len(points))
         if self._time_s is not None and time_s < self._time_s:
             self._clear()
         self._time_s = float(time_s)

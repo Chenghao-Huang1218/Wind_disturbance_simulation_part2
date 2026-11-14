@@ -1,4 +1,4 @@
-"""One shared physics clock, two isolated PX4 contexts, and artificial loads."""
+"""One shared physics clock, isolated PX4 contexts, and artificial loads."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import mujoco
 import numpy as np
 import numpy.typing as npt
 
+from .fleet import (box_attachment_offsets, horizontal_distances, validate_fleet)
 from .interaction import InteractionConfig, compute_pair_accelerations
 from .payload import PayloadConfig, PayloadSystem
 from .px4_bridge import (
@@ -45,7 +46,7 @@ class Aircraft:
 
 
 class DualSimulation:
-    """Coordinate the two complete aircraft without advancing separate worlds.
+    """Coordinate complete aircraft without advancing separate worlds.
 
     Args:
         separation_m: Initial horizontal center separation.
@@ -53,6 +54,7 @@ class DualSimulation:
         instance_base: First PX4 instance index.
         bridges: Optional socket-free bridge doubles for offline checks.
         payload_config: Shared cargo settings, or None for unloaded operation.
+        aircraft_count: Two or four aircraft; low-level default retains two.
     """
 
     def __init__(
@@ -62,19 +64,24 @@ class DualSimulation:
         instance_base: int = 0,
         bridges: Sequence[Any] | None = None,
         payload_config: PayloadConfig | None = None,
+        aircraft_count: int = 2,
     ) -> None:
         if (
             not np.isfinite(takeoff_height_m)
             or not 0.5 <= takeoff_height_m <= 10
         ):
             raise ValueError("takeoff height must be in .5..10 m")
-        if not 0 <= instance_base <= 8:
-            raise ValueError("instance_base must be in 0..8")
-        if bridges is not None and len(bridges) != 2:
-            raise ValueError("exactly two bridges are required")
-        self.model, self.data, self.bindings = load_scene(separation_m, payload_config)
+        validate_fleet(aircraft_count, instance_base)
+        if bridges is not None and len(bridges) != aircraft_count:
+            raise ValueError("one independent bridge per aircraft is required")
+        self.aircraft_count = aircraft_count
+        self.model, self.data, self.bindings = load_scene(separation_m, payload_config, aircraft_count)
         self.payload_config = payload_config
         self.payload_system = PayloadSystem(self.model, payload_config) if payload_config else None
+        self._initial_gripper_offsets = np.array([
+            self.data.site(binding.prefix + "endpoint").xpos - self.data.xpos[binding.root_id]
+            for binding in self.bindings
+        ])
         self.floor_id = self.model.geom("floor").id
         self.takeoff_height_m = takeoff_height_m
         self.interaction = InteractionConfig()
@@ -82,7 +89,7 @@ class DualSimulation:
         self.exit_requested = False
         self.takeoff_pending = False
         self.last_error = ""
-        self.last_accelerations = np.zeros((2, 3))
+        self.last_accelerations = np.zeros((aircraft_count, 3))
         hover = read_px4_param(
             ASSETS / "configs/X4-950.params", "MPC_THR_HOVER", 0.5
         )
@@ -121,7 +128,7 @@ class DualSimulation:
             )
 
     def connect(self) -> None:
-        """Open both bridge endpoints, closing partial initialization on failure."""
+        """Open all bridge endpoints, closing partial initialization on failure."""
         try:
             for item in self.aircraft:
                 item.bridge.connect()
@@ -130,7 +137,7 @@ class DualSimulation:
             raise
 
     def close(self) -> None:
-        """Close only the two bridge connections belonging to this application."""
+        """Close only the bridge connections belonging to this application."""
         for item in self.aircraft:
             item.bridge.close()
 
@@ -153,7 +160,7 @@ class DualSimulation:
         )
 
     def command(self, action: str, value: Any = None) -> None:
-        """Apply one operator command to the pair in the shared world.
+        """Apply one operator command to the fleet in the shared world.
 
         Args:
             action: arm, request_takeoff, takeoff, land, emergency, exit,
@@ -170,7 +177,7 @@ class DualSimulation:
                 return
             if any(item.phase not in ("disarmed", "armed", "landed")
                    for item in self.aircraft):
-                raise RuntimeError("takeoff requires both aircraft on the ground")
+                raise RuntimeError("takeoff requires all aircraft on the ground")
             self.command("arm")
             self.takeoff_pending = True
         elif action == "arm":
@@ -178,7 +185,7 @@ class DualSimulation:
                 item.bridge.heartbeat_is_recent() for item in self.aircraft
             ):
                 raise RuntimeError(
-                    "wait for fresh heartbeats from both PX4 instances"
+                    "wait for fresh heartbeats from all PX4 instances"
                 )
             for item in self.aircraft:
                 item.arm_pending = True
@@ -187,14 +194,14 @@ class DualSimulation:
         elif action == "takeoff":
             if not all(item.bridge.armed for item in self.aircraft):
                 raise RuntimeError(
-                    "both aircraft must be confirmed armed before takeoff"
+                    "all aircraft must be confirmed armed before takeoff"
                 )
             if any(
                 item.phase not in ("disarmed", "armed", "landed")
                 for item in self.aircraft
             ):
                 raise RuntimeError(
-                    "takeoff requires both aircraft on the ground"
+                    "takeoff requires all aircraft on the ground"
                 )
             for item in self.aircraft:
                 item.target[2] = item.home[2] + self.takeoff_height_m
@@ -219,62 +226,86 @@ class DualSimulation:
         elif action == "exit":
             self.exit_requested = True
         elif action == "separation":
-            difference = (
-                self.aircraft[1].target[:2] - self.aircraft[0].target[:2]
-            )
-            previous = float(np.linalg.norm(difference))
+            targets = np.array([item.target for item in self.aircraft])
+            distances = horizontal_distances(targets)
+            previous = float(distances[np.triu_indices(self.aircraft_count, 1)].min())
             desired = previous + float(value)
-            maximum = 2.25 if self.payload_system else 10
-            if not np.isfinite(desired) or not 1.5 <= desired <= maximum:
-                raise ValueError(
-                    f"target separation must be in 1.5..{maximum:g} m"
-                )
-            center = (
-                self.aircraft[1].target[:2] + self.aircraft[0].target[:2]
-            ) / 2
-            direction = difference / previous
-            for item, sign in zip(self.aircraft, (-1, 1)):
-                item.target[:2] = center + sign * desired / 2 * direction
+            if not np.isfinite(desired) or desired < 1.5:
+                raise ValueError("target separation must be finite and >=1.5 m")
+            center = targets[:, :2].mean(axis=0)
+            targets[:, :2] = center + (targets[:, :2] - center) * desired / previous
+            self._validate_target_positions(targets)
+            for item, target in zip(self.aircraft, targets):
+                item.target[:] = target
         elif action == "move":
             offset = np.asarray(value, dtype=float)
             if offset.shape != (3,) or not np.isfinite(offset).all():
                 raise ValueError("move offset must be a finite 3-vector")
-            for item in self.aircraft:
+            targets = np.array([item.target for item in self.aircraft])
+            for index, item in enumerate(self.aircraft):
                 if item.phase in ("takeoff", "hover"):
-                    item.target += offset
+                    targets[index] += offset
+            self._validate_target_positions(targets)
+            for item, target in zip(self.aircraft, targets):
+                item.target[:] = target
         else:
             raise ValueError(f"unknown command: {action}")
 
     def move_aircraft(self, index: int, offset: Sequence[float]) -> None:
-        """Move one aircraft target in world XYZ, preserving its peer's target.
+        """Move one aircraft target in world XYZ, preserving every peer target.
 
         Args:
-            index: Aircraft 0 (A) or 1 (B).
+            index: Zero-based aircraft index (A/B or A/B/C/D).
             offset: Finite world-frame target increment in metres.
 
         Raises:
             ValueError: Invalid index, vector or resulting horizontal spacing.
             RuntimeError: Selected aircraft is not armed and flying.
         """
-        if isinstance(index, bool) or not isinstance(index, (int, np.integer)) or index not in (0, 1):
-            raise ValueError("aircraft index must be 0 (A) or 1 (B)")
+        if (isinstance(index, bool) or not isinstance(index, (int, np.integer))
+                or not 0 <= index < self.aircraft_count):
+            raise ValueError(f"aircraft index must be in 0..{self.aircraft_count-1}")
         delta = np.asarray(offset, dtype=float)
         if delta.shape != (3,) or not np.isfinite(delta).all():
             raise ValueError("move offset must be a finite 3-vector")
         item = self.aircraft[index]
         if item.phase not in ("takeoff", "hover") or not item.bridge.armed:
             raise RuntimeError("selected aircraft must be armed and flying")
+        targets = np.array([peer.target.copy() for peer in self.aircraft])
         with np.errstate(over="ignore", invalid="ignore"):
-            candidate = item.target + delta
-            separation = float(np.linalg.norm(
-                candidate[:2] - self.aircraft[1 - index].target[:2]
-            ))
-        maximum = 2.25 if self.payload_system else 10.
-        if not np.isfinite(candidate).all():
+            targets[index] += delta
+        self._validate_target_positions(targets)
+        item.target[:] = targets[index]
+
+    def _validate_target_positions(self, targets: FloatArray) -> None:
+        """Reject an entire candidate formation before committing any target.
+
+        Args:
+            targets: Candidate world positions of all aircraft, shape (N, 3).
+
+        Raises:
+            ValueError: Nonfinite targets, insufficient separation or an
+                infeasible horizontal rope span in the level target geometry.
+        """
+        if not np.isfinite(targets).all():
             raise ValueError("resulting target must be finite")
-        if not np.isfinite(separation) or not 1.5 <= separation <= maximum:
+        distances = horizontal_distances(targets)
+        pairs = distances[np.triu_indices(self.aircraft_count, 1)]
+        maximum = 2.25 if self.payload_system and self.aircraft_count == 2 else 10.
+        if pairs.min() < 1.5 or pairs.max() > maximum:
             raise ValueError(f"target separation must be in 1.5..{maximum:g} m")
-        item.target[:] = candidate
+        if self.payload_system and self.aircraft_count == 4:
+            # Project fixed initial arm geometry at each root target. This is
+            # an operator target constraint, not a dynamic stability guarantee.
+            # endpoint coordinates are local to link6: recover the original
+            # world pose rather than treating them as root-relative offsets.
+            original = self._initial_gripper_offsets
+            anchors = targets[:, :2] + original[:, :2]
+            center = anchors.mean(axis=0)
+            ends = center + box_attachment_offsets(4)[:, :2]
+            spans = np.linalg.norm(anchors - ends, axis=1)
+            if np.any(spans >= self.payload_config.rope.rest_length_m):
+                raise ValueError("target formation exceeds horizontal rope reach")
 
     def _sensor(self, sensor_id: int) -> FloatArray:
         """Read a validated three-axis sensor from the current forward state."""
@@ -423,7 +454,7 @@ class DualSimulation:
         self.data.ctrl[binding.arm_ids] = item.arm_hold
 
     def step(self) -> dict[str, Any]:
-        """Compute both directed loads from one snapshot, then advance once.
+        """Compute all directed loads from one snapshot, then advance once.
 
         Returns:
             Log sample describing the same pre-step state and applied loads.
@@ -461,12 +492,15 @@ class DualSimulation:
             self.payload_system.apply(self.data)
             if self.payload_system else (None, [])
         )
+        distances = horizontal_distances(positions)
+        minimum_distance = float(distances[np.triu_indices(self.aircraft_count, 1)].min())
         sample = {
+            "aircraft_count": self.aircraft_count,
+            "pairwise_separations_m": distances.tolist(),
+            "min_separation_m": minimum_distance,
             "time_s": float(self.data.time),
             "interaction": asdict(self.interaction),
-            "separation_m": float(
-                np.linalg.norm(positions[1, :2] - positions[0, :2])
-            ),
+            "separation_m": minimum_distance,
             "aircraft": [],
             "payload": payload,
             "ropes": ropes,

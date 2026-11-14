@@ -1,0 +1,25 @@
+{
+  "deployed_root": "/home/raids/Dual_UAV_Interaction",
+  "ordinary_project_files_compared": 585,
+  "copy_mismatches": [],
+  "original_files_checked": 757,
+  "original_changed_files": [],
+  "project_symlinks": 92,
+  "broken_or_external_symlinks": [],
+  "offline_tests_passed": 26,
+  "offline_model_check": "2 aircraft, 8.0004 kg each, shared dt 0.005s",
+  "gui_flight_evidence": "outputs/validation/both_gui_verified/summary.json",
+  "deployed_off_flight": {
+    "summary": "outputs/validation/deployed_off_final/summary.json",
+    "success": true,
+    "armed_takeoff_landed": {
+      "armed": true,
+      "takeoff": true,
+      "landed": true
+    },
+    "owned_px4_stopped": true,
+    "elapsed_wall_s": 34.356426728998485
+  },
+  "final_review": "No remaining Critical/Important findings; independently verified 26 offline tests.",
+  "offline_test_location": "/home/raids/Dual_UAV_Interaction"
+}

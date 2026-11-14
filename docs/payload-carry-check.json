@@ -1,0 +1,140 @@
+{
+  "date": "2026-11-13",
+  "actual_PX4_SITL": true,
+  "instances": [
+    4,
+    5
+  ],
+  "firmware_recompiled": false,
+  "estimator_truth_bypass": true,
+  "headless_physics_flights": {
+    "carry_off_20261113_v4": {
+      "summary": "../outputs/validation/carry_off_20261113_v4/summary.json",
+      "elapsed_wall_s": 52.03864346600312,
+      "completion": {
+        "armed": true,
+        "takeoff": true,
+        "landed": true,
+        "payload_lifted": true,
+        "payload_translated": true,
+        "payload_grounded": true
+      },
+      "airborne_segment_min_bottom_clearance_m": 0.9955277704071481,
+      "airborne_segment_floor_contacts": 0,
+      "max_rope_tension_n": 3.907585980481918,
+      "final_payload_displacement_xy_m": [
+        0.5471630297939776,
+        0.0001784549604654023
+      ],
+      "final_bottom_clearance_m": -0.006668522000000052,
+      "owned_px4_stopped": true,
+      "first_logged_translation_target_time_s": 29.67999999999838,
+      "first_logged_landing_time_s": 38.32000000000115,
+      "independent_logged_transfer_valid_span_s": [
+        34.439999999999166,
+        38.30000000000114
+      ],
+      "independent_logged_transfer_valid_duration_s": 3.8600000000019747
+    },
+    "carry_both_20261113_final": {
+      "summary": "../outputs/validation/carry_both_20261113_final/summary.json",
+      "elapsed_wall_s": 52.278204444999574,
+      "completion": {
+        "armed": true,
+        "takeoff": true,
+        "landed": true,
+        "payload_lifted": true,
+        "payload_translated": true,
+        "payload_grounded": true
+      },
+      "airborne_segment_min_bottom_clearance_m": 1.0260193146643735,
+      "airborne_segment_floor_contacts": 0,
+      "max_rope_tension_n": 4.352933173133493,
+      "final_payload_displacement_xy_m": [
+        0.4943486518630996,
+        -1.784720413108669e-05
+      ],
+      "final_bottom_clearance_m": -0.006668522000000052,
+      "owned_px4_stopped": true,
+      "first_logged_translation_target_time_s": 29.539999999998408,
+      "first_logged_landing_time_s": 37.90000000000094,
+      "independent_logged_transfer_valid_span_s": [
+        34.03999999999896,
+        37.880000000000926
+      ],
+      "independent_logged_transfer_valid_duration_s": 3.8400000000019645
+    }
+  },
+  "unloaded_regression": {
+    "success": true,
+    "error": "",
+    "completion": {
+      "armed": true,
+      "takeoff": true,
+      "landed": true
+    },
+    "initial_mode": "off",
+    "final_settings": {
+      "mode": "off",
+      "horizontal_m_s2": 0.5,
+      "vertical_m_s2": 0.5,
+      "length_m": 2.0
+    },
+    "hover_samples": 386,
+    "hover_metrics": [
+      {
+        "position_rmse_m": [
+          0.0010043150765549939,
+          0.0006672462467065579,
+          0.10250407411108295
+        ],
+        "mean_interaction_acceleration_m_s2": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "position_rmse_m": [
+          0.001245093325616439,
+          0.000747506878871961,
+          0.10232587963307893
+        ],
+        "mean_interaction_acceleration_m_s2": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "elapsed_wall_s": 32.547642042001826,
+    "transport_phase": null,
+    "final_payload": null,
+    "final_ropes": [],
+    "payload_displacement_xy_m": null,
+    "owned_px4_stopped": true
+  },
+  "failed_development_runs": {
+    "carry_off_20261113_v1": "extra angular gate blocked acceptance; stopped by own runner SIGINT",
+    "carry_off_20261113_v2": "abrupt takeoff excites swing; stopped by own runner SIGINT",
+    "carry_off_20261113_v3": "speed-only ramp still excites swing; stopped by own runner SIGINT"
+  },
+  "acceptance_note": "200Hz runtime summary records sustained lift/transfer/ground completion. Independent checks use 50Hz logs: actual target-change timing, continuous airborne transport/no contact, and >=1s sampled valid transfer interval. Grounding uses MuJoCo soft contact (~6.67 mm penetration); airborne acceptance is translational, not attitude stabilization.",
+  "offline_tests": {
+    "passed": 54,
+    "elapsed_s": 13.83
+  },
+  "independent_review": {
+    "focused_tests_passed": 23,
+    "remaining_blocking_findings": 0
+  },
+  "owned_PX4_process_cleanup_verified_runs": 6,
+  "visual_pose_replay": {
+    "source": "outputs/validation/carry_both_20261113_final",
+    "frames": 100,
+    "physics_stepping": false,
+    "renderer": "MuJoCo EGL",
+    "body_arm_cargo_logged_poses": true,
+    "propeller_phase_recorded": false
+  }
+}

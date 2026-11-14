@@ -1,0 +1,12 @@
+{
+  "native_viewer_smoke": "passed",
+  "mujoco": "3.6.0",
+  "panel_backend": "TkAgg",
+  "dual_source_geoms": 5088,
+  "single_source_geoms_after_L_edit": 2496,
+  "median_cached_draw_ms": 31.3,
+  "open_sync_toggle_length_edit_close": true,
+  "no_arrow_geoms": true,
+  "PX4_started": false,
+  "mj_step_calls": 0
+}

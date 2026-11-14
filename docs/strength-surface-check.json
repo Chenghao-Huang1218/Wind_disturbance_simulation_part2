@@ -1,0 +1,63 @@
+{
+  "date": "2026-11-13",
+  "style": "normalized_strength_surface_with_contours",
+  "offline_tests": {
+    "passed": 41,
+    "elapsed_s": 8.13
+  },
+  "direction_constraint": "all visual geometry below current source world-horizontal plane",
+  "radius_definition": "horizontal scalar-graph domain",
+  "horizontal_radius_m": 10.0,
+  "height_mapping": "z_source - 0.65 - 1.35 * (1 - g(r)); visual encoding only",
+  "applied_L_controls_shape": true,
+  "actual_force_model_changed": false,
+  "surface_geoms_at_default_L_both_sources": 5088,
+  "contour_regression_L_m": [
+    0.1,
+    0.5,
+    1.0,
+    2.0,
+    8.0
+  ],
+  "scene": "project-local original blue checker ground.xml",
+  "native_window": {
+    "native_viewer_smoke": "passed",
+    "mujoco": "3.6.0",
+    "panel_backend": "TkAgg",
+    "dual_source_geoms": 5088,
+    "single_source_geoms_after_L_edit": 2496,
+    "median_cached_draw_ms": 31.3,
+    "open_sync_toggle_length_edit_close": true,
+    "no_arrow_geoms": true,
+    "PX4_started": false,
+    "mj_step_calls": 0
+  },
+  "native_window_coverage": "viewer/panel lifecycle and L rebuild; final contour alignment separately checked by regression and EGL previews",
+  "independent_review": {
+    "focused_tests_passed": 10,
+    "P2_contour_alignment": "fixed with RED-GREEN geometry regressions",
+    "remaining_blocking_findings": 0
+  },
+  "original_files_checked": 757,
+  "original_changed": [],
+  "px4_runtime_files_checked": 174,
+  "px4_runtime_changed": [],
+  "actual_dual_PX4_flight_retested": false,
+  "manual_desktop_acceptance": false,
+  "final_EGL_preview": {
+    "frames": 24,
+    "size": [
+      1100,
+      826
+    ],
+    "static_aircraft_poses": true,
+    "animation": "camera orbit only",
+    "post_contour_fix": true,
+    "files": [
+      "docs/media/disturbance-surface-close.png",
+      "docs/media/disturbance-surface-overview.png",
+      "docs/media/disturbance-surface.gif",
+      "docs/media/control-panel-strength-surface.png"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "shared_steps_m": [
+    0.1,
+    0.2,
+    0.5
+  ],
+  "default_step_m": 0.2,
+  "surface_root_offset_m": 0.05,
+  "previous_surface_root_offset_m": 0.65,
+  "surface_raised_m": 0.6,
+  "level_blade_mesh_bottom_above_root_m": 0.06631306110748703,
+  "level_central_surface_gap_below_blades_m": 0.11631306110748703,
+  "surface_geoms_dual": 5088,
+  "render_pose_source": "outputs/validation/control_panel_native_20261113/states.jsonl",
+  "render_time_s": 33.73999999999881,
+  "render_is_logged_pose_replay": true,
+  "PX4_started_this_check": false,
+  "mj_step_calls": 0,
+  "offline_tests": {
+    "passed": 69,
+    "elapsed_s": 23.03
+  }
+}

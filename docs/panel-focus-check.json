@@ -1,0 +1,8 @@
+{
+  "backend": "TkAgg",
+  "refresh_count": 30,
+  "show_calls_during_refresh": 0,
+  "topmost_calls_during_refresh": [],
+  "secondary_window_retained_focus": true,
+  "actual_PX4_started": false
+}

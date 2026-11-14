@@ -1,0 +1,584 @@
+{
+  "date": "2026-11-13",
+  "offline_tests": {
+    "passed": 77,
+    "elapsed_s": 47.34
+  },
+  "display_rates_hz": {
+    "panel": 2,
+    "events": 30,
+    "viewer": 20,
+    "field": 10
+  },
+  "mesh_unchanged": {
+    "radial_intervals": 12,
+    "azimuth_sectors": 48,
+    "dual_geoms": 5088,
+    "radius_m": 10,
+    "root_offset_m": 0.05
+  },
+  "physics_settings_unchanged": {
+    "dt_s": 0.005,
+    "loaded_speed_m_s": 0.25,
+    "loaded_acceleration_slew_m_s2": 0.1,
+    "wall_clock_catchup_added": false
+  },
+  "benchmark": {
+    "backend": "TkAgg",
+    "PX4_started": false,
+    "protocol": "20 matched calls per field state, native MuJoCo and Tk",
+    "before": {
+      "field_off": {
+        "median_ms": {
+          "physics": 3.4368060005363077,
+          "visual_update": 0.07154000195441768,
+          "visual_draw": 0.042997999116778374,
+          "viewer_sync": 23.212585503642913,
+          "panel_update": 1.4619374996982515,
+          "panel_flush": 141.55433300766163
+        },
+        "p95_ms": {
+          "physics": 5.990048110106727,
+          "visual_update": 0.12805894439225085,
+          "visual_draw": 0.07133570470614359,
+          "viewer_sync": 53.21458684993559,
+          "panel_update": 2.968508998310431,
+          "panel_flush": 184.85739634052155
+        },
+        "field_geoms": 0
+      },
+      "field_on": {
+        "median_ms": {
+          "physics": 4.168021994701121,
+          "visual_update": 0.15481250011362135,
+          "visual_draw": 94.75151849619579,
+          "viewer_sync": 24.95617249951465,
+          "panel_update": 1.3630635003210045,
+          "panel_flush": 142.7758290010388
+        },
+        "p95_ms": {
+          "physics": 6.53923235149705,
+          "visual_update": 0.27540924711502185,
+          "visual_draw": 121.5300161558844,
+          "viewer_sync": 45.22117154774606,
+          "panel_update": 2.388137699017534,
+          "panel_flush": 193.4385234875663
+        },
+        "field_geoms": 5088
+      }
+    },
+    "after": {
+      "field_off": {
+        "median_ms": {
+          "physics": 3.432840996538289,
+          "visual_update": 0.08505650475854054,
+          "visual_draw": 0.10444300278322771,
+          "viewer_sync": 21.079483500216156,
+          "panel_update": 22.94329399592243,
+          "panel_flush": 2.184914003009908
+        },
+        "p95_ms": {
+          "physics": 6.151578748540487,
+          "visual_update": 0.14254029738367552,
+          "visual_draw": 0.14782774378545585,
+          "viewer_sync": 34.28906924309558,
+          "panel_update": 42.91966795353802,
+          "panel_flush": 4.150754750298802
+        },
+        "field_geoms": 0
+      },
+      "field_on": {
+        "median_ms": {
+          "physics": 3.062978998059407,
+          "visual_update": 0.13162499817553908,
+          "visual_draw": 8.808265498373657,
+          "viewer_sync": 21.795463995658793,
+          "panel_update": 12.704773507721256,
+          "panel_flush": 1.282729506783653
+        },
+        "p95_ms": {
+          "physics": 6.066543045744766,
+          "visual_update": 0.2966519037727267,
+          "visual_draw": 25.64093994224101,
+          "viewer_sync": 28.305618790182052,
+          "panel_update": 40.27876995387487,
+          "panel_flush": 3.265706951060566
+        },
+        "field_geoms": 5088
+      }
+    }
+  },
+  "isolation": {
+    "original_files_checked": 757,
+    "original_changed": [],
+    "runtime_files_checked": 174,
+    "runtime_changed": [],
+    "PX4_recompiled": false
+  },
+  "independent_review": {
+    "focused_tests_passed": 24,
+    "cache_equivalence_cases": 70,
+    "remaining_material_findings": 0,
+    "additional_resize_and_managed_extent_checks": true
+  },
+  "native_independent_moves": {
+    "success": true,
+    "error": "",
+    "native_GUI": true,
+    "backend": "TkAgg",
+    "actual_dual_PX4": true,
+    "instance_base": 4,
+    "events": [
+      {
+        "event": "Takeoff both clicked",
+        "time_s": 13.030000000000637
+      },
+      {
+        "event": "field start/draw/stop",
+        "geoms": 5088,
+        "time_s": 26.71499999999897
+      },
+      {
+        "event": "field restarted for moves",
+        "time_s": 26.71499999999897
+      },
+      {
+        "event": "independent move",
+        "aircraft": 0,
+        "axis": 0,
+        "target": [
+          [
+            0.2,
+            -1.0,
+            2.48
+          ],
+          [
+            0.0,
+            1.0,
+            2.48
+          ]
+        ],
+        "measured_axis_displacement_m": 0.12313842610618235,
+        "time_s": 29.444999999998426
+      },
+      {
+        "event": "independent move",
+        "aircraft": 0,
+        "axis": 1,
+        "target": [
+          [
+            0.2,
+            -0.8,
+            2.48
+          ],
+          [
+            0.0,
+            1.0,
+            2.48
+          ]
+        ],
+        "measured_axis_displacement_m": 0.12030987907490076,
+        "time_s": 32.21999999999803
+      },
+      {
+        "event": "independent move",
+        "aircraft": 0,
+        "axis": 2,
+        "target": [
+          [
+            0.2,
+            -0.8,
+            2.68
+          ],
+          [
+            0.0,
+            1.0,
+            2.48
+          ]
+        ],
+        "measured_axis_displacement_m": 0.12426074052229108,
+        "time_s": 34.77999999999934
+      },
+      {
+        "event": "independent move",
+        "aircraft": 1,
+        "axis": 0,
+        "target": [
+          [
+            0.2,
+            -0.8,
+            2.68
+          ],
+          [
+            0.2,
+            1.0,
+            2.48
+          ]
+        ],
+        "measured_axis_displacement_m": 0.12764295319335373,
+        "time_s": 37.450000000000706
+      },
+      {
+        "event": "independent move",
+        "aircraft": 1,
+        "axis": 1,
+        "target": [
+          [
+            0.2,
+            -0.8,
+            2.68
+          ],
+          [
+            0.2,
+            1.2,
+            2.48
+          ]
+        ],
+        "measured_axis_displacement_m": 0.12008042800652508,
+        "time_s": 40.205000000002116
+      },
+      {
+        "event": "independent move",
+        "aircraft": 1,
+        "axis": 2,
+        "target": [
+          [
+            0.2,
+            -0.8,
+            2.68
+          ],
+          [
+            0.2,
+            1.2,
+            2.68
+          ]
+        ],
+        "measured_axis_displacement_m": 0.12071769344422911,
+        "time_s": 42.73000000000341
+      },
+      {
+        "event": "grounded/disarmed",
+        "time_s": 55.93000000001016
+      }
+    ],
+    "phase": "landing",
+    "elapsed_wall_s": 74.57433643699915,
+    "simulated_time_s": 55.93000000001016,
+    "realtime_factor": 0.7499898894512423,
+    "display_rates_hz": {
+      "panel": 2.0,
+      "events": 30.0,
+      "viewer": 20.0,
+      "field": 10.0
+    },
+    "owned_px4_stopped": true,
+    "final_payload": {
+      "position": [
+        0.5729050142997634,
+        0.23979225144388108,
+        0.0683314779999999
+      ],
+      "quaternion_wxyz": [
+        0.9999384840450268,
+        2.0326770057846543e-17,
+        6.279798074749167e-19,
+        0.011091804439893703
+      ],
+      "velocity": [
+        1.1698729733150878e-17,
+        6.941080170120604e-17,
+        7.361916688629546e-16
+      ],
+      "angular_velocity": [
+        -1.0591317363878809e-15,
+        2.1484265081953936e-16,
+        2.3091554313236875e-17
+      ],
+      "bottom_clearance_m": -0.006668522000000038,
+      "floor_contact": true
+    }
+  },
+  "standard_cli_initial_timeout": {
+    "success": false,
+    "error": "RuntimeError: automatic run timed out in phase landing",
+    "completion": {
+      "armed": true,
+      "takeoff": true,
+      "landed": false,
+      "payload_lifted": true,
+      "payload_translated": true,
+      "payload_grounded": false
+    },
+    "initial_mode": "both",
+    "final_settings": {
+      "mode": "both",
+      "horizontal_m_s2": 0.5,
+      "vertical_m_s2": 0.5,
+      "length_m": 2.0
+    },
+    "hover_samples": 68,
+    "hover_metrics": [
+      {
+        "position_rmse_m": [
+          0.03653213977394205,
+          0.015587326269003821,
+          0.001138768107249412
+        ],
+        "mean_interaction_acceleration_m_s2": [
+          0.0001001429193810961,
+          -0.2540128101650618,
+          -0.2540128309748683
+        ]
+      },
+      {
+        "position_rmse_m": [
+          0.03729728687414307,
+          0.016278838551281826,
+          0.001049366375335263
+        ],
+        "mean_interaction_acceleration_m_s2": [
+          -0.0001001429193810961,
+          0.2540128101650618,
+          -0.2540128309748683
+        ]
+      }
+    ],
+    "elapsed_wall_s": 160.37589572799334,
+    "simulated_time_s": 29.62999999999839,
+    "realtime_factor": 0.18475344295160134,
+    "transport_phase": "landing",
+    "final_payload": {
+      "position": [
+        0.8415626687336493,
+        -0.00299907134931067,
+        0.9347712712041456
+      ],
+      "quaternion_wxyz": [
+        0.9995911925713986,
+        -2.9500161924492874e-06,
+        -0.02857986235953324,
+        0.0007994951512000836
+      ],
+      "velocity": [
+        -0.20050443949678382,
+        -0.0007779415088354605,
+        -0.19917353251769446
+      ],
+      "angular_velocity": [
+        0.004062080875803412,
+        0.4227334817104059,
+        -0.00458270463979202
+      ],
+      "bottom_clearance_m": 0.8484587824674623,
+      "floor_contact": false
+    },
+    "final_ropes": [
+      {
+        "length_m": 1.2344312453632287,
+        "extension_m": 0.034431245363228724,
+        "extension_rate_m_s": 0.0021747557416126866,
+        "tension_n": 3.4496488035477104,
+        "force_on_anchor_n": [
+          0.1174829511797258,
+          2.426583898092959,
+          -2.449074357694399
+        ],
+        "anchor_position": [
+          0.7954288187860717,
+          -0.9913369579638983,
+          1.8860380406360033
+        ],
+        "payload_attachment_position": [
+          0.8374692217350876,
+          -0.123001903038699,
+          1.0096549415081464
+        ],
+        "moment_about_aircraft_com_nm": [
+          0.6965878627401787,
+          0.6943911301682844,
+          0.7214299262758826
+        ]
+      },
+      {
+        "length_m": 1.2344615934507794,
+        "extension_m": 0.03446159345077948,
+        "extension_rate_m_s": 0.00209213805627331,
+        "tension_n": 3.452435759246768,
+        "force_on_anchor_n": [
+          0.11830066174900077,
+          -2.4286697444949015,
+          -2.450893897607693
+        ],
+        "anchor_position": [
+          0.7947857799419022,
+          0.9853990383721452,
+          1.8859903305204264
+        ],
+        "payload_attachment_position": [
+          0.8370856614148061,
+          0.11699779014472532,
+          1.009642558337787
+        ],
+        "moment_about_aircraft_com_nm": [
+          -0.6858589843366284,
+          0.6944876885610677,
+          -0.7212955283668314
+        ]
+      }
+    ],
+    "payload_displacement_xy_m": [
+      0.5445485385179792,
+      -0.000545248471421692
+    ],
+    "owned_px4_stopped": true
+  },
+  "baseline_module_sha256": {
+    "panel.py": "090f443b1eefad51846bd01c13c50efb0ba318455bc3aa5d44bfd8faa6c81ee5",
+    "disturbance_visualization.py": "3869e99c32516246cdec3a027161f5e16f35cd29a222ce7fb5b10fcd425f52f6"
+  },
+  "scope_note": "Microbenchmarks use socket-free doubles and compare matched native work; host load varied. Native lifecycle and standard CLI results are recorded separately. No claim of guaranteed realtime or strict speedup from unrelated user run.",
+  "standard_cli_retry": {
+    "success": true,
+    "error": "",
+    "completion": {
+      "armed": true,
+      "takeoff": true,
+      "landed": true,
+      "payload_lifted": true,
+      "payload_translated": true,
+      "payload_grounded": true
+    },
+    "initial_mode": "both",
+    "final_settings": {
+      "mode": "both",
+      "horizontal_m_s2": 0.5,
+      "vertical_m_s2": 0.5,
+      "length_m": 2.0
+    },
+    "hover_samples": 140,
+    "hover_metrics": [
+      {
+        "position_rmse_m": [
+          0.02955642340458478,
+          0.007598602854763449,
+          0.0009001032597071952
+        ],
+        "mean_interaction_acceleration_m_s2": [
+          -0.00017877438417170606,
+          -0.2519083409460417,
+          -0.25190841745266557
+        ]
+      },
+      {
+        "position_rmse_m": [
+          0.028107765471992525,
+          0.007847539251143187,
+          0.0008267938736953856
+        ],
+        "mean_interaction_acceleration_m_s2": [
+          0.00017877438417170606,
+          0.2519083409460417,
+          -0.25190841745266557
+        ]
+      }
+    ],
+    "elapsed_wall_s": 189.31520157700288,
+    "simulated_time_s": 39.890000000001955,
+    "realtime_factor": 0.21070679436600112,
+    "transport_phase": "done",
+    "final_payload": {
+      "position": [
+        0.8256941066902937,
+        -0.002090944018710016,
+        0.06833147799999986
+      ],
+      "quaternion_wxyz": [
+        0.9999999993450214,
+        2.4111247663080447e-17,
+        3.7513297609412984e-20,
+        -3.6193311475001604e-05
+      ],
+      "velocity": [
+        6.066201719301641e-18,
+        8.366379851490829e-17,
+        4.0169724135577116e-16
+      ],
+      "angular_velocity": [
+        -1.1430092237929767e-15,
+        -8.812799375615417e-17,
+        -1.1217223695379793e-16
+      ],
+      "bottom_clearance_m": -0.006668522000000038,
+      "floor_contact": true
+    },
+    "final_ropes": [
+      {
+        "length_m": 0.7979978298931975,
+        "extension_m": 0.0,
+        "extension_rate_m_s": 1.251473736895978e-06,
+        "tension_n": 0.0,
+        "force_on_anchor_n": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "anchor_position": [
+          0.7922346954959985,
+          -0.9193222179949069,
+          0.1331392840435854
+        ],
+        "payload_attachment_position": [
+          0.8256854202955455,
+          -0.12209094370432044,
+          0.14333147799999973
+        ],
+        "moment_about_aircraft_com_nm": [
+          0.0,
+          -0.0,
+          0.0
+        ]
+      },
+      {
+        "length_m": 0.7988796440368927,
+        "extension_m": 0.0,
+        "extension_rate_m_s": 1.1732359101464495e-06,
+        "tension_n": 0.0,
+        "force_on_anchor_n": [
+          0.0,
+          -0.0,
+          0.0
+        ],
+        "anchor_position": [
+          0.7945867767949459,
+          0.9161174219548409,
+          0.13313916841463208
+        ],
+        "payload_attachment_position": [
+          0.825702793085042,
+          0.11790905566690041,
+          0.14333147799999973
+        ],
+        "moment_about_aircraft_com_nm": [
+          -0.0,
+          -0.0,
+          0.0
+        ]
+      }
+    ],
+    "payload_displacement_xy_m": [
+      0.5286799764746237,
+      0.000362878859178962
+    ],
+    "owned_px4_stopped": true
+  },
+  "standard_cli_validation_driver": "Normal cli.main --auto in isolated TkAgg/Xvfb; one scripted native canvas Start field click after panel initialization. Existing auto flight sequence unmodified.",
+  "validation_only_timeout_s": 300,
+  "product_default_timeout_changed": false,
+  "observed_host_cpus": 24,
+  "observed_host_1min_load": [
+    23.27,
+    18.89,
+    10.14
+  ],
+  "stable_realtime_verified": false
+}

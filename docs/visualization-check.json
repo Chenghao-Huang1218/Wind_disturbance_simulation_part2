@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-13",
+  "offline_tests": {
+    "passed": 35,
+    "scope": "including horizontal/downward-only revision",
+    "elapsed_s": 6.39
+  },
+  "offline_model_check": {
+    "aircraft": 2,
+    "mass_kg_each": 8.0004,
+    "timestep_s": 0.005,
+    "PX4_started": false
+  },
+  "offscreen_preview": {
+    "backend": "EGL",
+    "frames": 48,
+    "physics_stepped": false,
+    "files": [
+      "docs/media/disturbance-close.png",
+      "docs/media/disturbance-overview.png",
+      "docs/media/disturbance-propagation.gif",
+      "docs/media/control-panel-propagation.png"
+    ]
+  },
+  "native_window_smoke": {
+    "passed": true,
+    "display": "Xvfb",
+    "panel_backend": "TkAgg",
+    "mujoco": "3.6.0",
+    "open_draw_sync_toggle_close": true,
+    "dual_source_geoms": 48,
+    "single_source_geoms": 24,
+    "PX4_started": false,
+    "mj_step_calls": 0,
+    "verified_before_direction_revision": true
+  },
+  "independent_review": {
+    "blocking_findings": 0,
+    "focused_tests_passed": 18,
+    "verified_before_direction_revision": true
+  },
+  "original_files_checked": 757,
+  "original_changed_or_missing": [],
+  "runtime_files_checked": 174,
+  "runtime_changed_or_missing": [],
+  "new_feature_actual_PX4_flight_verified": false,
+  "manual_desktop_acceptance": false,
+  "model_is_calibrated_wind_field": false,
+  "propagation_directions": "horizontal_and_downward_only",
+  "plane_reference": "world-horizontal plane at each batch emission origin",
+  "no_upward_geometry_including_width_verified": true,
+  "historical_record": true,
+  "superseded_by": "strength-surface-check.json"
+}

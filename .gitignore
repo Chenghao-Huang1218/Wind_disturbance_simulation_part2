@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+outputs/
+build/
+*.egg-info/
+
+# Local credentials, editor state, and simulation diagnostics
+.aws/
+.codex/
+.agents/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+MUJOCO_LOG.TXT
+.DS_Store

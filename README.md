@@ -1,4 +1,4 @@
-# MultiUAV-windInteraction-simulation
+# Wind_disturbance_simulation_part2
 
 **多无人机风场互扰与协同吊运仿真平台 · MuJoCo + 四 PX4 SITL**
 
@@ -61,8 +61,8 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 以下命令从仓库根目录运行，不依赖开发者电脑上的其它项目目录。
 
 ```bash
-git clone https://github.com/Chenghao-Huang1218/MultiUAV-windInteraction-simulation.git
-cd MultiUAV-windInteraction-simulation
+git clone https://github.com/Chenghao-Huang1218/Wind_disturbance_simulation_part2.git
+cd Wind_disturbance_simulation_part2
 
 conda create -n env_uav python=3.12 -y
 conda activate env_uav
@@ -85,7 +85,7 @@ CLI 默认互扰模式是 `off`，上面的命令显式开启 `both`。
 
 ```bash
 conda activate env_uav
-cd MultiUAV-windInteraction-simulation  # 替换为你的实际项目路径
+cd Wind_disturbance_simulation_part2  # 替换为你的实际项目路径
 python scripts/run_simulation.py --aircraft-count 4 --mode both --instance-base 4
 ```
 

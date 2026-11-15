@@ -52,7 +52,19 @@ Wind_disturbance_simulation_part2/
 │   │   ├── disturbance_visualization.py  # 强度曲面
 │   │   ├── payload.py          # 弹力绳与共同负载
 │   │   ├── panel.py            # 各机独立控制面板
-│   │   └── assets/             # 飞机模型与场景
+│   │   └── assets/             # MuJoCo 模型与资源
+│   │       ├── scenes/default/
+│   │       │   └── robot_quadrotor_950_with_arm.xml
+│   │       ├── robot_models/
+│   │       │   ├── quadrotor_950/
+│   │       │   │   ├── quadrotor_950.xml
+│   │       │   │   └── meshes/
+│   │       │   ├── airbot_play/
+│   │       │   │   ├── airbot_play.xml
+│   │       │   │   └── meshes/
+│   │       │   └── scenes/
+│   │       │       └── ground.xml
+│   │       └── configs/         # PX4 参数
 │   └── pymavlink/              # 内置 MAVLink 库
 ├── runtime/px4/                # 预编译 PX4 SITL
 ├── scripts/                    # 启动、预览与验证工具
@@ -63,6 +75,8 @@ Wind_disturbance_simulation_part2/
 ├── pyproject.toml
 └── requirements.txt
 ~~~
+
+MuJoCo 主场景入口：[robot_quadrotor_950_with_arm.xml](src/dual_uav_interaction/assets/scenes/default/robot_quadrotor_950_with_arm.xml)。 四机共享世界、物块与吊绳由 [scene.py](src/dual_uav_interaction/scene.py) 在运行时组装。
 
 ## 安装与启动
 

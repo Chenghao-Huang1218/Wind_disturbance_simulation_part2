@@ -14,19 +14,28 @@
 
 https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 
-[下载原始演示视频](demo/Demo%20video.mp4)。上方为同一段四机演示的 H.264 网页播放版，保留完整时长。
+[下载原始演示视频](demo/Demo%20video.mp4)。
 
-![四机 MuJoCo 场景与共同负载](demo/Mujoco%20model.png)
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="demo/Mujoco%20model.png"><img src="demo/Mujoco%20model.png" width="400" alt="四机 MuJoCo 场景与共同负载"><br>四机 MuJoCo 场景</a>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="demo/Contorl%20UI.png"><img src="demo/Contorl%20UI.png" width="400" alt="四机独立控制面板"><br>四机独立控制面板</a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/media/four-uav-fields/disturbance-surface-close.png"><img src="docs/media/four-uav-fields/disturbance-surface-close.png" width="400" alt="四源曲面示意"><br>四源曲面示意</a>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/media/four-uav-payload-sitl.png"><img src="docs/media/four-uav-payload-sitl.png" width="400" alt="已验证运行的吊运姿态回放"><br>已验证运行的吊运姿态回放</a>
+    </td>
+  </tr>
+</table>
 
-<details>
-<summary>展开四机独立控制面板</summary>
-
-![四机独立控制面板](demo/Contorl%20UI.png)
-
-</details>
-
-[四源曲面示意](docs/media/four-uav-fields/disturbance-surface-close.png) ·
-[已验证运行的吊运姿态回放](docs/media/four-uav-payload-sitl.png)。前者为离线示意姿态，后者读取实际 SITL 日志；均不代表气动标定。
+四源曲面为离线示意姿态，吊运姿态回放读取实际 SITL 日志；均不代表气动标定。
 
 ## 功能与用途
 
@@ -38,7 +47,7 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 - **扰动可视化**：四张半透明强度曲面与等值线，分别跟随机体、位于机体水平面以下，水平显示半径 10 m。
 - **自动流程与记录**：起飞、吊起、共同平移、保持、降落及退出；记录四机状态、四绳张力、互扰加速度和实时倍率。
 
-机械臂保持初始姿态；绳索预先连接，当前不包含主动抓取、机械臂轨迹规划或真实流体求解。
+机械臂保持初始姿态；绳索预先连接。
 
 ## 运行依赖
 
@@ -121,7 +130,6 @@ python scripts/run_simulation.py --aircraft-count 4 --mode both --instance-base 
 原双机模式保留带载水平间距 **1.50–2.25 m** 的范围。
 
 带载位置目标按仿真时间平滑发送：速度上限 **0.25 m/s**、常规加速度渐变 **0.1 m/s²**。
-因此按下按钮后飞机不会瞬移到 Tgt。运行速度还受主机负载和绘图开销影响，当前不保证实时倍率达到 1。
 
 ## 实现方法
 
@@ -185,8 +193,7 @@ z_{\mathrm{vis},i}(r)=z_i-0.05-1.35\bigl[1-g(r)\bigr],
 $$
 
 曲面最高点在机体原点下方 0.05 m，边缘渐隐，源停转后在 0.6 s 仿真时间内淡出。
-半径 10 m 仅限制显示，不截断受力模型的衰减尾部。曲面高度编码归一化人工强度，
-不是风速场，不能用曲面梯度代替受力公式。Ah/Az 不改变归一化曲面的高度。
+半径 10 m 仅限制显示，不截断受力模型的衰减尾部。
 
 ### 四条弹力绳与共同物块
 
@@ -251,43 +258,3 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 MPLBACKEND=Agg python -m pytest -q
 自动流程按实测状态验收：起飞 → 物块离地及张力/速度/位置稳定 → 共同 +X 平移 0.5 m →
 实际物块位移及稳定性满足条件 → 保持 → 降落、物块接地、绳松弛且四机解除解锁。
 较慢主机可能触发墙钟超时；示例中的 300 s 不改变默认 80 s 或验收条件。
-
-## 日志、验证与目录
-
-四机面板读数默认 1 Hz（双机 2 Hz），事件 30 Hz、MuJoCo 同步 20 Hz、曲面更新 10 Hz，独立调度。
-
-每次运行自动创建 `outputs/runs/<运行标识>/`，包含：
-
-- `metadata.json`：参数、通信身份、显示频率等配置。
-- `states.jsonl`：50 Hz 仿真时间状态，含四机、关节、物块、四绳张力、人工互扰、全对水平距离和墙钟时间。
-- `summary.json`：各阶段完成情况、异常、仿真/现实耗时及 `realtime_factor`。
-- `px4/a/`、`px4/b/`、`px4/c/`、`px4/d/`：四机独立参数、控制台与 PX4 日志。
-
-四机默认实例 0/1/2/3；示例使用 4/5/6/7，对应系统 ID 5/6/7/8、TCP 4564–4567、Offboard UDP 14584–14587。
-四机 `--instance-base` 范围为 0–6；双机为 0–8。
-已有输出目录会被拒绝，避免覆盖。原始运行日志、虚拟环境和缓存不提交到 GitHub。
-
-```text
-src/dual_uav_interaction/  模型组装、共享仿真、互扰、吊绳、桥接、显示及面板
-src/pymavlink/             随项目保留的通信依赖与原始声明
-runtime/px4/              预编译 Linux x86-64 SITL 与启动资源
-scripts/                  启动、回放、预览、面板验证及显示基准
-tests/                   离线回归测试
-demo/                    用户提供的两张截图与视频
-docs/                    安装、来源、验证记录与历史开发说明
-licenses/                第三方许可证
-```
-
-四机扩展的当前离线记录为 **87 项测试通过**；已有实际四 PX4 的起飞、四绳吊物、共同平移及降落成功记录，
-物块向 +X 实际位移约 0.505 m。四机图形与独立移动验证结果见下述验证记录。
-四机验证结果见 [四机验证说明](docs/FOUR_UAV_VALIDATION.md)；历史记录见 [VALIDATION](docs/VALIDATION.md)，资源及适配来源见 [PROVENANCE](docs/PROVENANCE.md)。
-历史文档中的 `outputs/validation/` 指开发机保留的运行目录，原始日志没有随仓库分发。
-上述证据不代表气动精度、真实传感器、硬件或实机飞行验收。
-
-## 许可证与引用
-
-项目自有代码、文档、演示素材及已授权的 RAIDS Lab 模型按 [MIT](LICENSE) 发布。
-PX4、pymavlink 和其它第三方素材继续适用各自原始许可证，见
-[THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES.md)。MIT 不覆盖这些独立的第三方材料。
-
-研究中使用时，请注明项目名称、仓库地址和使用的提交版本，并如实说明人工扰动模型及真值反馈范围。

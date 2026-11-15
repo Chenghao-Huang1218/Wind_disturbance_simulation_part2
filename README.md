@@ -1,5 +1,7 @@
 # Wind_disturbance_simulation_part2
 
+**简体中文** | [English](README.en.md)
+
 **多无人机风场互扰与协同吊运仿真平台 · MuJoCo + 四 PX4 SITL**
 
 在同一个 MuJoCo 世界中默认运行四架搭载 **Airbot Play 机械臂的 X4-950 四旋翼**，
@@ -34,8 +36,6 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
     </td>
   </tr>
 </table>
-
-四源曲面为离线示意姿态，吊运姿态回放读取实际 SITL 日志；均不代表气动标定。
 
 ## 功能与用途
 

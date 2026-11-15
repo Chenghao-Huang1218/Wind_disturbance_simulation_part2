@@ -39,6 +39,31 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 - Adjustable horizontal/downward disturbances and four strength surfaces.
 - Automated takeoff, lift, translation and landing sequence.
 
+## Project structure
+
+~~~text
+Wind_disturbance_simulation_part2/
+├── src/
+│   ├── dual_uav_interaction/
+│   │   ├── simulation.py       # Shared MuJoCo world and simulation loop
+│   │   ├── fleet.py            # Two/four-aircraft configuration
+│   │   ├── px4_bridge.py       # Per-aircraft PX4 communication
+│   │   ├── interaction.py      # Artificial disturbance forces
+│   │   ├── disturbance_visualization.py  # Strength surfaces
+│   │   ├── payload.py          # Elastic ropes and shared payload
+│   │   ├── panel.py            # Independent aircraft controls
+│   │   └── assets/             # Aircraft models and scenes
+│   └── pymavlink/              # Bundled MAVLink library
+├── runtime/px4/                # Prebuilt PX4 SITL
+├── scripts/                    # Launch, preview and validation tools
+├── tests/                      # Offline checks
+├── demo/                       # Screenshots and video
+├── docs/                       # Installation and validation records
+├── licenses/                   # Third-party licenses
+├── pyproject.toml
+└── requirements.txt
+~~~
+
 ## Installation and launch
 
 Tested on **Ubuntu 24.04 x86-64 / Python 3.12**, with MuJoCo 3.6.0, NumPy 2.4.4 and Matplotlib 3.10.9. The GUI requires Tk and OpenGL; MAVLink dependencies are supplied or installed through requirements.

@@ -52,7 +52,19 @@ Wind_disturbance_simulation_part2/
 │   │   ├── disturbance_visualization.py  # Strength surfaces
 │   │   ├── payload.py          # Elastic ropes and shared payload
 │   │   ├── panel.py            # Independent aircraft controls
-│   │   └── assets/             # Aircraft models and scenes
+│   │   └── assets/             # MuJoCo models and assets
+│   │       ├── scenes/default/
+│   │       │   └── robot_quadrotor_950_with_arm.xml
+│   │       ├── robot_models/
+│   │       │   ├── quadrotor_950/
+│   │       │   │   ├── quadrotor_950.xml
+│   │       │   │   └── meshes/
+│   │       │   ├── airbot_play/
+│   │       │   │   ├── airbot_play.xml
+│   │       │   │   └── meshes/
+│   │       │   └── scenes/
+│   │       │       └── ground.xml
+│   │       └── configs/         # PX4 parameters
 │   └── pymavlink/              # Bundled MAVLink library
 ├── runtime/px4/                # Prebuilt PX4 SITL
 ├── scripts/                    # Launch, preview and validation tools
@@ -63,6 +75,8 @@ Wind_disturbance_simulation_part2/
 ├── pyproject.toml
 └── requirements.txt
 ~~~
+
+MuJoCo scene entry: [robot_quadrotor_950_with_arm.xml](src/dual_uav_interaction/assets/scenes/default/robot_quadrotor_950_with_arm.xml). [scene.py](src/dual_uav_interaction/scene.py) assembles the shared four-aircraft world, payload and ropes at runtime.
 
 ## Installation and launch
 

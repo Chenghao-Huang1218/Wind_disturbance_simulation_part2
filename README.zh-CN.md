@@ -39,6 +39,31 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 - 可调的水平/向下扰动与四张强度曲面。
 - 自动完成起飞、吊起、共同平移和降落。
 
+## 目录结构
+
+~~~text
+Wind_disturbance_simulation_part2/
+├── src/
+│   ├── dual_uav_interaction/
+│   │   ├── simulation.py       # 共享 MuJoCo 世界与仿真循环
+│   │   ├── fleet.py            # 双机/四机配置
+│   │   ├── px4_bridge.py       # 各机 PX4 通信
+│   │   ├── interaction.py      # 人工互扰受力
+│   │   ├── disturbance_visualization.py  # 强度曲面
+│   │   ├── payload.py          # 弹力绳与共同负载
+│   │   ├── panel.py            # 各机独立控制面板
+│   │   └── assets/             # 飞机模型与场景
+│   └── pymavlink/              # 内置 MAVLink 库
+├── runtime/px4/                # 预编译 PX4 SITL
+├── scripts/                    # 启动、预览与验证工具
+├── tests/                      # 离线检查
+├── demo/                       # 展示图片与视频
+├── docs/                       # 安装说明与验证记录
+├── licenses/                   # 第三方许可证
+├── pyproject.toml
+└── requirements.txt
+~~~
+
 ## 安装与启动
 
 验证环境：**Ubuntu 24.04 x86-64 / Python 3.12**，MuJoCo 3.6.0、NumPy 2.4.4、Matplotlib 3.10.9。图形界面需要 Tk 与 OpenGL，MAVLink 依赖由仓库提供或通过 requirements 安装。

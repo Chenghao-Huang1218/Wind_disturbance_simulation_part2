@@ -129,25 +129,23 @@ A/B 在上，C/D 在下。目标水平间距至少 **1.5 m**，带载目标还�
 
 接收机 $i$ 与源机 $j$ 的水平距离、方向为：
 
-$$
-d_{ij}=\sqrt{(x_i-x_j)^2+(y_i-y_j)^2},
-\qquad
- g_{ij}=\frac{1}{1+(d_{ij}/L)^2}
-$$
-
-$$
-\mathbf e_{j\to i}=\frac{\mathbf p_{i,xy}-\mathbf p_{j,xy}}{d_{ij}}
-$$
+```math
+\begin{aligned}
+d_{ij} &= \sqrt{(x_i-x_j)^2+(y_i-y_j)^2},\\[4pt]
+g_{ij} &= \frac{1}{1+(d_{ij}/L)^2},\\[4pt]
+\boldsymbol{e}_{j\to i} &= \frac{\boldsymbol{p}_{i,xy}-\boldsymbol{p}_{j,xy}}{d_{ij}}.
+\end{aligned}
+```
 
 叠加其余有效源机集合 $\mathcal S_i$ 的贡献：
 
-$$
+```math
 \begin{aligned}
-\mathbf a_{i,xy}&=\sum_{j\in\mathcal S_i} A_h g_{ij}\,\mathbf e_{j\to i},\\
-a_{i,z}&=-\sum_{j\in\mathcal S_i} A_z g_{ij},\\
-\mathbf F_i&=m_i\mathbf a_i.
+\boldsymbol{a}_{i,xy} &= \sum\nolimits_{j\in\mathcal S_i} A_h g_{ij}\,\boldsymbol{e}_{j\to i},\\[4pt]
+a_{i,z} &= -\sum\nolimits_{j\in\mathcal S_i} A_z g_{ij},\\[4pt]
+\boldsymbol{F}_i &= m_i\boldsymbol{a}_i.
 \end{aligned}
-$$
+```
 
 | 参数 | 含义 | 默认值 |
 | --- | --- | --- |
@@ -161,14 +159,14 @@ $$
 
 四张半透明曲面与等值线跟随各机，位于机体水平面以下：
 
-$$
+```math
 g(r)=\frac{1}{1+(r/L)^2}
-$$
+```
 
-$$
+```math
 z_{\mathrm{vis},i}(r)=z_i-0.05-1.35\bigl[1-g(r)\bigr],
 \qquad 0\le r\le 10\,\mathrm{m}
-$$
+```
 
 最高点在机体原点下方 0.05 m，10 m 半径仅限制可视化范围。
 
@@ -176,29 +174,30 @@ $$
 
 四条弹力绳将 Airbot Play 夹爪连接至 **0.5 kg、0.40×0.30×0.15 m** 物块顶面的四个独立吊点。默认 $L_0=1.6$ m、$k=100$ N/m、$c=3$ N·s/m。
 
-$$
-\mathbf r=\mathbf p_{\mathrm{box,site}}-\mathbf p_{\mathrm{gripper}},
-\qquad \ell=\lVert\mathbf r\rVert,
-\qquad \mathbf n=\frac{\mathbf r}{\ell}
-$$
+```math
+\begin{aligned}
+\boldsymbol{r} &= \boldsymbol{p}_{\mathrm{box,site}}-\boldsymbol{p}_{\mathrm{gripper}},\\[4pt]
+\ell &= \lVert\boldsymbol{r}\rVert,\\[4pt]
+\boldsymbol{n} &= \frac{\boldsymbol{r}}{\ell},\\[4pt]
+\dot\ell &= \bigl(\boldsymbol{v}_{\mathrm{box,site}}-\boldsymbol{v}_{\mathrm{gripper}}\bigr)\cdot\boldsymbol{n}.
+\end{aligned}
+```
 
-$$
-\dot\ell=\bigl(\mathbf v_{\mathrm{box,site}}-\mathbf v_{\mathrm{gripper}}\bigr)\cdot\mathbf n
-$$
-
-$$
+```math
 T=\begin{cases}
 \max(0, k(\ell-L_0)+c\dot{\ell}), & \ell>L_0,\\
 0, & \ell\le L_0.
 \end{cases}
-$$
+```
 
-$$
-\mathbf F_{\mathrm{gripper}}=T\mathbf n,
-\qquad \mathbf F_{\mathrm{box}}=-T\mathbf n
-$$
+```math
+\begin{aligned}
+\boldsymbol{F}_{\mathrm{gripper}} &= T\boldsymbol{n},\\[4pt]
+\boldsymbol{F}_{\mathrm{box}} &= -T\boldsymbol{n}.
+\end{aligned}
+```
 
-$\mathbf n$ 从夹爪指向物块吊点。连接点速度通过 site Jacobian 计算，**mj_applyFT** 成对施加点力及对应力矩。
+$\boldsymbol{n}$ 从夹爪指向物块吊点。连接点速度通过 site Jacobian 计算，**mj_applyFT** 成对施加点力及对应力矩。
 
 ## 7. 其它运行方式
 

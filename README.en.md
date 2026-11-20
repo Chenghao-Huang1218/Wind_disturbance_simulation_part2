@@ -6,7 +6,7 @@ Multi-UAV wind interaction simulation in MuJoCo with multiple PX4 SITL instances
 
 Four X4-950 aircraft with Airbot Play arms share one MuJoCo world, with independent XYZ control and four ropes carrying one payload. Interaction uses a **manually specified distance-decaying acceleration disturbance model**; surfaces illustrate artificial strength. PX4 uses simulation truth-state feedback.
 
-## Demo
+## 1. Demo
 
 https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 
@@ -31,7 +31,7 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
   </tr>
 </table>
 
-## Features
+## 2. Features
 
 - Four independent PX4 SITL processes using one bundled binary.
 - Four aircraft facing +X, with shared takeoff/landing and individual XYZ targets.
@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 - Adjustable horizontal/downward disturbances and four strength surfaces.
 - Automated takeoff, lift, translation and landing sequence.
 
-## Project structure
+## 3. Project structure
 
 ~~~text
 Wind_disturbance_simulation_part2/
@@ -78,7 +78,7 @@ Wind_disturbance_simulation_part2/
 
 MuJoCo scene entry: [robot_quadrotor_950_with_arm.xml](src/dual_uav_interaction/assets/scenes/default/robot_quadrotor_950_with_arm.xml). [scene.py](src/dual_uav_interaction/scene.py) assembles the shared four-aircraft world, payload and ropes at runtime.
 
-## Installation and launch
+## 4. Installation and launch
 
 Tested on **Ubuntu 24.04 x86-64 / Python 3.12**, with MuJoCo 3.6.0, NumPy 2.4.4 and Matplotlib 3.10.9. The GUI requires Tk and OpenGL; MAVLink dependencies are supplied or installed through requirements.
 
@@ -101,7 +101,7 @@ python scripts/run_simulation.py --aircraft-count 4 --mode both --instance-base 
 
 No separate PX4 terminal or firmware build is needed. The command above enables both disturbance channels; the CLI default is **off**.
 
-## Control panel
+## 5. Control panel
 
 1. Wait for all four aircraft to show **connected**, then click **Takeoff all**.
 2. Wait for the payload to lift, then use each aircraft's XYZ buttons.
@@ -121,7 +121,7 @@ No separate PX4 terminal or firmware build is needed. The command above enables 
 
 A/B are above C/D. Minimum horizontal target spacing is **1.5 m**; loaded targets must also fit the rope geometry. Loaded target speed is limited to **0.25 m/s**. Use **--panel-hz 0.5** for slower readout refresh.
 
-## Model
+## 6. Model
 
 The shared world advances once per **0.005 s** physics step. Aircraft begin in a 2 m square with the same heading; each aircraft and arm weighs about 8.0004 kg.
 
@@ -200,7 +200,7 @@ $$
 
 Here $\mathbf n$ points from gripper to payload attachment. Site Jacobians provide attachment velocities; **mj_applyFT** applies equal and opposite point forces and their moments.
 
-## Other run modes
+## 7. Other run modes
 
 ~~~bash
 # No payload

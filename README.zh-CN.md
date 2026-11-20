@@ -6,7 +6,7 @@
 
 四架搭载 Airbot Play 机械臂的 X4-950 共享物理世界，支持独立 XYZ 控制与四绳共吊一个物块。互扰采用 **“人工设置的距离衰减加速度扰动模型”**，曲面显示人工强度；PX4 使用仿真真值反馈。
 
-## 演示
+## 1. 演示
 
 https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 
@@ -31,7 +31,7 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
   </tr>
 </table>
 
-## 功能
+## 2. 功能
 
 - 一个预编译 PX4 程序运行四个独立 SITL 进程。
 - 四机机头统一朝 +X，共同起降、独立 XYZ 控制。
@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 - 可调的水平/向下扰动与四张强度曲面。
 - 自动完成起飞、吊起、共同平移和降落。
 
-## 目录结构
+## 3. 目录结构
 
 ~~~text
 Wind_disturbance_simulation_part2/
@@ -78,7 +78,7 @@ Wind_disturbance_simulation_part2/
 
 MuJoCo 主场景入口：[robot_quadrotor_950_with_arm.xml](src/dual_uav_interaction/assets/scenes/default/robot_quadrotor_950_with_arm.xml)。 四机共享世界、物块与吊绳由 [scene.py](src/dual_uav_interaction/scene.py) 在运行时组装。
 
-## 安装与启动
+## 4. 安装与启动
 
 验证环境：**Ubuntu 24.04 x86-64 / Python 3.12**，MuJoCo 3.6.0、NumPy 2.4.4、Matplotlib 3.10.9。图形界面需要 Tk 与 OpenGL，MAVLink 依赖由仓库提供或通过 requirements 安装。
 
@@ -101,7 +101,7 @@ python scripts/run_simulation.py --aircraft-count 4 --mode both --instance-base 
 
 无需另开 PX4 终端或编译固件。上述命令开启水平与竖直扰动，CLI 默认模式为 **off**。
 
-## 控制面板
+## 5. 控制面板
 
 1. 等待四机均显示 **connected**，点击 **Takeoff all**。
 2. 等待物块吊起，通过各机 XYZ 按钮移动。
@@ -121,7 +121,7 @@ python scripts/run_simulation.py --aircraft-count 4 --mode both --instance-base 
 
 A/B 在上，C/D 在下。目标水平间距至少 **1.5 m**，带载目标还需满足绳长几何约束。带载目标速度上限 **0.25 m/s**；添加 **--panel-hz 0.5** 可降低读数刷新频率。
 
-## 实现方法
+## 6. 实现方法
 
 共享世界每 **0.005 s** 推进一步。四机初始同向排列为边长 2 m 的方阵，每架含机械臂质量约 8.0004 kg。
 
@@ -200,7 +200,7 @@ $$
 
 $\mathbf n$ 从夹爪指向物块吊点。连接点速度通过 site Jacobian 计算，**mj_applyFT** 成对施加点力及对应力矩。
 
-## 其它运行方式
+## 7. 其它运行方式
 
 ~~~bash
 # 无物块

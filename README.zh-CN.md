@@ -15,10 +15,10 @@ https://github.com/user-attachments/assets/9a2315fe-3065-4619-844e-3c66ddbbb3b2
 <table>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="demo/Mujoco%20model.png"><img src="demo/Mujoco%20model.png" width="400" alt="Four-UAV MuJoCo scene and shared payload"><br>Four-UAV MuJoCo scene</a>
+      <a href="demo/Mujoco%20model.png"><img src="demo/Mujoco%20model.png" width="400" alt="四机 MuJoCo 场景与共同负载"><br>四机 MuJoCo 场景</a>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="demo/Contorl%20UI.png"><img src="demo/Contorl%20UI.png" width="400" alt="Independent controls for four UAVs"><br>Independent controls for four UAVs</a>
+      <a href="demo/Contorl%20UI.png"><img src="demo/Contorl%20UI.png" width="400" alt="四架无人机的独立控制面板"><br>四机独立控制</a>
     </td>
   </tr>
   <tr>
